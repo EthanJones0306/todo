@@ -8,6 +8,14 @@ interface Todo {
   done: boolean
 }
 
+type Theme = 'neon' | 'crt'
+
+function loadTheme(): Theme {
+  if (typeof document === 'undefined') return 'neon'
+  const attr = document.documentElement.getAttribute('data-theme')
+  return attr === 'crt' ? 'crt' : 'neon'
+}
+
 function loadTodos(): Todo[] {
   if (typeof window === 'undefined') return []
   try {
@@ -25,15 +33,24 @@ export default function Home() {
   const [todos, setTodos] = useState<Todo[]>([])
   const [input, setInput] = useState('')
   const [mounted, setMounted] = useState(false)
+  const [theme, setTheme] = useState<Theme>('neon')
 
   useEffect(() => {
     setTodos(loadTodos())
+    setTheme(loadTheme())
     setMounted(true)
   }, [])
 
   useEffect(() => {
     if (mounted) saveTodos(todos)
   }, [todos, mounted])
+
+  const toggleTheme = () => {
+    const next: Theme = theme === 'neon' ? 'crt' : 'neon'
+    setTheme(next)
+    document.documentElement.setAttribute('data-theme', next)
+    localStorage.setItem('arcade-theme', next)
+  }
 
   const addTodo = () => {
     const text = input.trim()
@@ -60,6 +77,12 @@ export default function Home() {
 
   return (
     <div className="container">
+      <div className="topbar">
+        <button className="btn-theme" onClick={toggleTheme}>
+          {theme === 'neon' ? 'CRT MODE' : 'NEON MODE'}
+        </button>
+      </div>
+
       <h1>ARCADE TODO</h1>
 
       <div className="input-row">
