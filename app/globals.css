@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-
 *,
 *::before,
 *::after {
@@ -9,72 +7,113 @@
 }
 
 :root {
-  --bg: #0a0a0a;
-  --surface: #141420;
-  --border: #2a2a3a;
-  --primary: #39ff14;
-  --primary-dim: #1a7a0a;
-  --danger: #ff3860;
-  --text: #e0e0e0;
-  --text-dim: #6a6a7a;
-  --done: #4a4a5a;
-  --glow: 0 0 10px rgba(57, 255, 20, 0.3);
-  --glow-strong: 0 0 20px rgba(57, 255, 20, 0.5);
+  --bg-1: #0e0a2b;
+  --bg-2: #1b0f3d;
+  --surface: rgba(30, 22, 64, 0.55);
+  --surface-border: rgba(168, 130, 255, 0.25);
+  --primary: #ff2ec4;
+  --primary-soft: rgba(255, 46, 196, 0.35);
+  --secondary: #22d3ee;
+  --secondary-soft: rgba(34, 211, 238, 0.35);
+  --accent: #a855f7;
+  --danger: #ff5f6d;
+  --text: #f1ecff;
+  --text-dim: #9a8fc4;
+  --done: #564b82;
+  --glow: 0 0 12px var(--primary-soft);
+  --glow-strong: 0 0 24px var(--primary-soft), 0 0 48px var(--secondary-soft);
 }
 
 body {
-  font-family: 'Press Start 2P', var(--font-arcade), monospace;
-  background: var(--bg);
+  font-family: var(--font-body), 'Rajdhani', sans-serif;
+  background: radial-gradient(ellipse at top, var(--bg-2) 0%, var(--bg-1) 55%, #06041a 100%);
   color: var(--text);
   min-height: 100vh;
-  padding: 2rem;
-  line-height: 1.8;
-  font-size: 12px;
+  padding: 3rem 1.5rem;
+  line-height: 1.6;
+  font-size: 16px;
+  font-weight: 500;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Neon horizon grid */
+body::before {
+  content: '';
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 45vh;
+  pointer-events: none;
+  background-image:
+    linear-gradient(90deg, rgba(255, 46, 196, 0.18) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(34, 211, 238, 0.18) 1px, transparent 1px);
+  background-size: 48px 48px;
+  -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+  mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+  transform: perspective(300px) rotateX(55deg);
+  transform-origin: bottom;
+  z-index: 0;
+}
+
+/* Soft ambient glow blobs */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle 380px at 15% 10%, var(--primary-soft), transparent 60%),
+    radial-gradient(circle 420px at 85% 15%, var(--secondary-soft), transparent 60%);
+  opacity: 0.6;
+  z-index: 0;
 }
 
 .container {
-  max-width: 600px;
+  max-width: 620px;
   margin: 0 auto;
+  position: relative;
+  z-index: 1;
 }
 
 h1 {
   text-align: center;
-  color: var(--primary);
-  text-shadow: var(--glow-strong);
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-weight: 800;
+  background: linear-gradient(90deg, var(--primary), var(--accent), var(--secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 18px var(--primary-soft));
   margin-bottom: 2.5rem;
-  font-size: 18px;
-  letter-spacing: 2px;
-  animation: flicker 3s infinite alternate;
-}
-
-@keyframes flicker {
-  0%, 95%, 100% { opacity: 1; }
-  96% { opacity: 0.8; }
-  97% { opacity: 1; }
-  98% { opacity: 0.7; }
-  99% { opacity: 1; }
+  font-size: 30px;
+  letter-spacing: 4px;
 }
 
 .input-row {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.6rem;
   margin-bottom: 2rem;
 }
 
 .input-row input {
   flex: 1;
   background: var(--surface);
-  border: 2px solid var(--border);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--surface-border);
+  border-radius: 14px;
   color: var(--text);
-  padding: 0.75rem;
+  padding: 0.9rem 1.1rem;
   font-family: inherit;
-  font-size: 10px;
+  font-size: 15px;
+  font-weight: 600;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .input-row input:focus {
-  border-color: var(--primary);
+  border-color: var(--secondary);
   box-shadow: var(--glow);
 }
 
@@ -84,78 +123,89 @@ h1 {
 }
 
 .btn-add {
-  background: var(--primary);
-  color: var(--bg);
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #fff;
   border: none;
-  padding: 0.75rem 1rem;
-  font-family: inherit;
-  font-size: 10px;
+  border-radius: 14px;
+  padding: 0.9rem 1.4rem;
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
   cursor: pointer;
   transition: box-shadow 0.2s, transform 0.1s;
   white-space: nowrap;
+  box-shadow: 0 4px 18px var(--primary-soft);
 }
 
 .btn-add:hover {
   box-shadow: var(--glow-strong);
-  transform: scale(1.05);
+  transform: translateY(-2px);
 }
 
 .btn-add:active {
-  transform: scale(0.95);
+  transform: scale(0.96);
 }
 
 .todo-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.65rem;
 }
 
 .todo-item {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.85rem;
   background: var(--surface);
-  border: 1px solid var(--border);
-  padding: 0.75rem;
-  transition: border-color 0.2s;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--surface-border);
+  border-radius: 14px;
+  padding: 0.9rem 1.1rem;
+  transition: border-color 0.2s, transform 0.15s;
 }
 
 .todo-item:hover {
-  border-color: var(--primary-dim);
+  border-color: var(--secondary-soft);
+  transform: translateX(2px);
 }
 
 .todo-item.done {
-  opacity: 0.5;
+  opacity: 0.55;
 }
 
 .todo-check {
-  width: 18px;
-  height: 18px;
-  border: 2px solid var(--border);
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  border: 2px solid var(--secondary);
   background: transparent;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: border-color 0.2s, background 0.2s;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
   padding: 0;
-  color: var(--primary);
-  font-size: 10px;
+  color: #06041a;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .todo-check:hover {
-  border-color: var(--primary);
+  box-shadow: 0 0 10px var(--secondary-soft);
 }
 
 .todo-item.done .todo-check {
-  border-color: var(--primary-dim);
-  background: var(--primary-dim);
+  border-color: var(--primary);
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: #fff;
 }
 
 .todo-text {
   flex: 1;
-  font-size: 10px;
+  font-size: 15px;
+  font-weight: 600;
   word-break: break-word;
 }
 
@@ -169,26 +219,33 @@ h1 {
   border: none;
   color: var(--danger);
   cursor: pointer;
-  font-family: inherit;
-  font-size: 10px;
-  padding: 0.25rem;
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 0.35rem;
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, transform 0.15s;
 }
 
 .todo-item:hover .btn-delete {
   opacity: 1;
 }
 
+.btn-delete:hover {
+  transform: scale(1.2);
+}
+
 .empty-state {
   text-align: center;
   color: var(--text-dim);
-  font-size: 10px;
-  padding: 3rem 0;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 3.5rem 0;
 }
 
 .empty-state .blink {
-  animation: blink 1.2s step-end infinite;
+  animation: blink 1.4s step-end infinite;
+  color: var(--secondary);
 }
 
 @keyframes blink {
@@ -198,47 +255,16 @@ h1 {
 
 .counter {
   text-align: center;
-  margin-bottom: 1.5rem;
-  font-size: 9px;
+  margin-bottom: 1.75rem;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
   color: var(--text-dim);
+  text-transform: uppercase;
 }
 
 .counter span {
   color: var(--primary);
-}
-
-/* Scanline overlay */
-body::after {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.05) 2px,
-    rgba(0, 0, 0, 0.05) 4px
-  );
-  z-index: 9999;
-}
-
-/* Vignette */
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  background: radial-gradient(
-    ellipse at center,
-    transparent 60%,
-    rgba(0, 0, 0, 0.6) 100%
-  );
-  z-index: 9998;
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 14px;
 }
