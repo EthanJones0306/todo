@@ -1,0 +1,244 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #0a0a0a;
+  --surface: #141420;
+  --border: #2a2a3a;
+  --primary: #39ff14;
+  --primary-dim: #1a7a0a;
+  --danger: #ff3860;
+  --text: #e0e0e0;
+  --text-dim: #6a6a7a;
+  --done: #4a4a5a;
+  --glow: 0 0 10px rgba(57, 255, 20, 0.3);
+  --glow-strong: 0 0 20px rgba(57, 255, 20, 0.5);
+}
+
+body {
+  font-family: 'Press Start 2P', var(--font-arcade), monospace;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 2rem;
+  line-height: 1.8;
+  font-size: 12px;
+}
+
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+h1 {
+  text-align: center;
+  color: var(--primary);
+  text-shadow: var(--glow-strong);
+  margin-bottom: 2.5rem;
+  font-size: 18px;
+  letter-spacing: 2px;
+  animation: flicker 3s infinite alternate;
+}
+
+@keyframes flicker {
+  0%, 95%, 100% { opacity: 1; }
+  96% { opacity: 0.8; }
+  97% { opacity: 1; }
+  98% { opacity: 0.7; }
+  99% { opacity: 1; }
+}
+
+.input-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.input-row input {
+  flex: 1;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  color: var(--text);
+  padding: 0.75rem;
+  font-family: inherit;
+  font-size: 10px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input-row input:focus {
+  border-color: var(--primary);
+  box-shadow: var(--glow);
+}
+
+.input-row input::placeholder {
+  color: var(--text-dim);
+  font-family: inherit;
+}
+
+.btn-add {
+  background: var(--primary);
+  color: var(--bg);
+  border: none;
+  padding: 0.75rem 1rem;
+  font-family: inherit;
+  font-size: 10px;
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.1s;
+  white-space: nowrap;
+}
+
+.btn-add:hover {
+  box-shadow: var(--glow-strong);
+  transform: scale(1.05);
+}
+
+.btn-add:active {
+  transform: scale(0.95);
+}
+
+.todo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 0.75rem;
+  transition: border-color 0.2s;
+}
+
+.todo-item:hover {
+  border-color: var(--primary-dim);
+}
+
+.todo-item.done {
+  opacity: 0.5;
+}
+
+.todo-check {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color 0.2s, background 0.2s;
+  padding: 0;
+  color: var(--primary);
+  font-size: 10px;
+}
+
+.todo-check:hover {
+  border-color: var(--primary);
+}
+
+.todo-item.done .todo-check {
+  border-color: var(--primary-dim);
+  background: var(--primary-dim);
+}
+
+.todo-text {
+  flex: 1;
+  font-size: 10px;
+  word-break: break-word;
+}
+
+.todo-item.done .todo-text {
+  text-decoration: line-through;
+  color: var(--text-dim);
+}
+
+.btn-delete {
+  background: transparent;
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
+  padding: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.todo-item:hover .btn-delete {
+  opacity: 1;
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 10px;
+  padding: 3rem 0;
+}
+
+.empty-state .blink {
+  animation: blink 1.2s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.counter {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  font-size: 9px;
+  color: var(--text-dim);
+}
+
+.counter span {
+  color: var(--primary);
+}
+
+/* Scanline overlay */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.05) 2px,
+    rgba(0, 0, 0, 0.05) 4px
+  );
+  z-index: 9999;
+}
+
+/* Vignette */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 60%,
+    rgba(0, 0, 0, 0.6) 100%
+  );
+  z-index: 9998;
+}
