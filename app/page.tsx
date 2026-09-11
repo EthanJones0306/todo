@@ -8,12 +8,19 @@ interface Todo {
   done: boolean
 }
 
-type Theme = 'neon' | 'crt'
+type Theme = 'neon' | 'crt' | 'paper'
+
+const THEME_ORDER: Theme[] = ['neon', 'crt', 'paper']
+const THEME_LABEL: Record<Theme, string> = {
+  neon: 'NEON MODE',
+  crt: 'CRT MODE',
+  paper: 'PAPER MODE',
+}
 
 function loadTheme(): Theme {
   if (typeof document === 'undefined') return 'neon'
   const attr = document.documentElement.getAttribute('data-theme')
-  return attr === 'crt' ? 'crt' : 'neon'
+  return THEME_ORDER.includes(attr as Theme) ? (attr as Theme) : 'neon'
 }
 
 function loadTodos(): Todo[] {
@@ -45,8 +52,8 @@ export default function Home() {
     if (mounted) saveTodos(todos)
   }, [todos, mounted])
 
-  const toggleTheme = () => {
-    const next: Theme = theme === 'neon' ? 'crt' : 'neon'
+  const cycleTheme = () => {
+    const next = THEME_ORDER[(THEME_ORDER.indexOf(theme) + 1) % THEME_ORDER.length]
     setTheme(next)
     document.documentElement.setAttribute('data-theme', next)
     localStorage.setItem('arcade-theme', next)
@@ -78,8 +85,8 @@ export default function Home() {
   return (
     <div className="container">
       <div className="topbar">
-        <button className="btn-theme" onClick={toggleTheme}>
-          {theme === 'neon' ? 'CRT MODE' : 'NEON MODE'}
+        <button className="btn-theme" onClick={cycleTheme}>
+          {THEME_LABEL[THEME_ORDER[(THEME_ORDER.indexOf(theme) + 1) % THEME_ORDER.length]]}
         </button>
       </div>
 

@@ -56,6 +56,31 @@ html[data-theme='crt'] {
   --btn-text: var(--bg-1);
 }
 
+/* THEME: paper - simplistic old-fashioned typewritten paper look */
+html[data-theme='paper'] {
+  --bg-1: #ede1c4;
+  --bg-2: #ede1c4;
+  --bg-3: #ede1c4;
+  --surface: #f7f0dc;
+  --surface-border: #b8a878;
+  --primary: #2b2116;
+  --primary-soft: rgba(43, 33, 22, 0.15);
+  --secondary: #6b4f2a;
+  --secondary-soft: rgba(107, 79, 42, 0.25);
+  --accent: #8a7245;
+  --danger: #7a2e2e;
+  --text: #241c14;
+  --text-dim: #7a6b52;
+  --done: #a89a7c;
+  --glow: 0 1px 4px rgba(43, 33, 22, 0.15);
+  --glow-strong: 0 4px 14px rgba(43, 33, 22, 0.25);
+  --radius: 2px;
+  --blur: 0px;
+  --check-done-bg: var(--primary);
+  --btn-bg: var(--primary);
+  --btn-text: var(--bg-1);
+}
+
 body {
   font-family: var(--font-body), 'Rajdhani', sans-serif;
   background: radial-gradient(ellipse at top, var(--bg-2) 0%, var(--bg-1) 55%, var(--bg-3) 100%);
@@ -73,6 +98,12 @@ html[data-theme='crt'] body {
   font-family: var(--font-retro), 'Press Start 2P', monospace;
   line-height: 1.8;
   font-size: 12px;
+}
+
+html[data-theme='paper'] body {
+  font-family: var(--font-paper), 'Courier New', monospace;
+  line-height: 1.7;
+  font-size: 15px;
 }
 
 /* Neon horizon grid (default theme decoration) */
@@ -138,6 +169,12 @@ html[data-theme='crt'] body::after {
   z-index: 9999;
 }
 
+/* Paper theme: no decoration, flat page */
+html[data-theme='paper'] body::before,
+html[data-theme='paper'] body::after {
+  display: none;
+}
+
 .container {
   max-width: 620px;
   margin: 0 auto;
@@ -167,6 +204,10 @@ html[data-theme='crt'] body::after {
 
 html[data-theme='crt'] .btn-theme {
   font-family: var(--font-retro), 'Press Start 2P', monospace;
+}
+
+html[data-theme='paper'] .btn-theme {
+  font-family: var(--font-paper), 'Courier New', monospace;
 }
 
 .btn-theme:hover {
@@ -200,6 +241,23 @@ html[data-theme='crt'] h1 {
   font-size: 18px;
   letter-spacing: 2px;
   animation: flicker 3s infinite alternate;
+}
+
+html[data-theme='paper'] h1 {
+  font-family: var(--font-paper), 'Courier New', monospace;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--primary);
+  filter: none;
+  text-shadow: none;
+  font-weight: 400;
+  font-size: 26px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  border-bottom: 2px solid var(--primary);
+  padding-bottom: 0.75rem;
+  animation: none;
 }
 
 @keyframes flicker {
@@ -238,6 +296,11 @@ html[data-theme='crt'] .input-row input {
   font-size: 10px;
 }
 
+html[data-theme='paper'] .input-row input {
+  font-family: var(--font-paper), 'Courier New', monospace;
+  font-size: 14px;
+}
+
 .input-row input:focus {
   border-color: var(--secondary);
   box-shadow: var(--glow);
@@ -269,6 +332,12 @@ html[data-theme='crt'] .btn-add {
   font-size: 10px;
   padding: 0.75rem 1rem;
   box-shadow: none;
+}
+
+html[data-theme='paper'] .btn-add {
+  font-family: var(--font-paper), 'Courier New', monospace;
+  letter-spacing: 2px;
+  text-transform: uppercase;
 }
 
 .btn-add:hover {
@@ -351,6 +420,12 @@ html[data-theme='crt'] .todo-check {
   font-size: 10px;
 }
 
+html[data-theme='paper'] .todo-check {
+  border-radius: 3px;
+  color: var(--bg-1);
+  font-size: 12px;
+}
+
 .todo-check:hover {
   box-shadow: 0 0 10px var(--secondary-soft);
 }
@@ -369,6 +444,10 @@ html[data-theme='crt'] .todo-check:hover {
 html[data-theme='crt'] .todo-item.done .todo-check {
   border-color: var(--accent);
   color: var(--primary);
+}
+
+html[data-theme='paper'] .todo-item.done .todo-check {
+  color: var(--bg-1);
 }
 
 .todo-text {
@@ -403,6 +482,10 @@ html[data-theme='crt'] .todo-text {
 html[data-theme='crt'] .btn-delete {
   font-family: var(--font-retro), 'Press Start 2P', monospace;
   font-size: 10px;
+}
+
+html[data-theme='paper'] .btn-delete {
+  font-family: var(--font-paper), 'Courier New', monospace;
 }
 
 .todo-item:hover .btn-delete {
@@ -466,4 +549,8 @@ html[data-theme='crt'] .counter {
 html[data-theme='crt'] .counter span {
   font-family: var(--font-retro), 'Press Start 2P', monospace;
   font-size: 9px;
+}
+
+html[data-theme='paper'] .counter span {
+  font-family: var(--font-paper), 'Courier New', monospace;
 }
