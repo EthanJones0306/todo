@@ -1,17 +1,31 @@
 import type { Metadata } from 'next'
-import { Press_Start_2P } from 'next/font/google'
+import { Orbitron, Rajdhani, Press_Start_2P } from 'next/font/google'
 import './globals.css'
 
-const pressStart = Press_Start_2P({
-  weight: '400',
+const orbitron = Orbitron({
+  weight: ['600', '800'],
   subsets: ['latin'],
   variable: '--font-arcade',
 })
 
+const rajdhani = Rajdhani({
+  weight: ['500', '600'],
+  subsets: ['latin'],
+  variable: '--font-body',
+})
+
+const pressStart = Press_Start_2P({
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-retro',
+})
+
 export const metadata: Metadata = {
   title: 'ARCADE TODO',
-  description: 'A retro arcade-themed todo list',
+  description: 'An arcade-themed todo list with neon and retro CRT themes',
 }
+
+const THEME_INIT_SCRIPT = `try{document.documentElement.setAttribute('data-theme',localStorage.getItem('arcade-theme')||'neon')}catch(e){}`
 
 export default function RootLayout({
   children,
@@ -20,7 +34,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={pressStart.variable}>{children}</body>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
+      <body className={`${orbitron.variable} ${rajdhani.variable} ${pressStart.variable}`}>
+        {children}
+      </body>
     </html>
   )
 }
