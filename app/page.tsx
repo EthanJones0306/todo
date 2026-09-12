@@ -8,13 +8,14 @@ interface Todo {
   done: boolean
 }
 
-type Theme = 'neon' | 'crt' | 'paper'
+type Theme = 'neon' | 'crt' | 'paper' | 'standard'
 
-const THEME_ORDER: Theme[] = ['neon', 'crt', 'paper']
+const THEME_ORDER: Theme[] = ['neon', 'crt', 'paper', 'standard']
 const THEME_LABEL: Record<Theme, string> = {
-  neon: 'NEON MODE',
-  crt: 'CRT MODE',
-  paper: 'PAPER MODE',
+  neon: 'Neon',
+  crt: 'CRT',
+  paper: 'Paper',
+  standard: 'Standard',
 }
 
 function loadTheme(): Theme {
@@ -52,8 +53,7 @@ export default function Home() {
     if (mounted) saveTodos(todos)
   }, [todos, mounted])
 
-  const cycleTheme = () => {
-    const next = THEME_ORDER[(THEME_ORDER.indexOf(theme) + 1) % THEME_ORDER.length]
+  const applyTheme = (next: Theme) => {
     setTheme(next)
     document.documentElement.setAttribute('data-theme', next)
     localStorage.setItem('arcade-theme', next)
@@ -85,9 +85,18 @@ export default function Home() {
   return (
     <div className="container">
       <div className="topbar">
-        <button className="btn-theme" onClick={cycleTheme}>
-          {THEME_LABEL[THEME_ORDER[(THEME_ORDER.indexOf(theme) + 1) % THEME_ORDER.length]]}
-        </button>
+        <select
+          className="theme-select"
+          value={theme}
+          onChange={e => applyTheme(e.target.value as Theme)}
+          aria-label="Choose theme"
+        >
+          {THEME_ORDER.map(t => (
+            <option key={t} value={t}>
+              {THEME_LABEL[t]}
+            </option>
+          ))}
+        </select>
       </div>
 
       <h1>ARCADE TODO</h1>
