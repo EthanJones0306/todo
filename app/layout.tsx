@@ -34,8 +34,8 @@ const ebGaramond = EB_Garamond({
 })
 
 export const metadata: Metadata = {
-  title: 'ARCADE TODO',
-  description: 'An arcade-themed todo list with neon and retro CRT themes',
+  title: 'To-Do List',
+  description: 'A todo list with neon, retro CRT, paper, and standard themes',
 }
 
 const THEME_INIT_SCRIPT = `try{document.documentElement.setAttribute('data-theme',localStorage.getItem('arcade-theme')||'neon')}catch(e){}`

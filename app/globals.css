@@ -629,6 +629,12 @@ html[data-theme='crt'] .counter {
   font-size: 9px;
 }
 
+html[data-theme='paper'] .counter,
+html[data-theme='standard'] .counter {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
 .counter span {
   color: var(--primary);
   font-family: var(--font-arcade), 'Orbitron', sans-serif;

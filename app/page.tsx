@@ -81,6 +81,7 @@ export default function Home() {
   }
 
   const remaining = todos.filter(t => !t.done).length
+  const isArcade = theme === 'neon' || theme === 'crt'
 
   return (
     <div className="container">
@@ -99,35 +100,44 @@ export default function Home() {
         </select>
       </div>
 
-      <h1>ARCADE TODO</h1>
+      <h1>To-Do List</h1>
 
       <div className="input-row">
         <input
           type="text"
-          placeholder="INSERT COIN..."
+          placeholder={isArcade ? 'INSERT COIN...' : 'Add a task...'}
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           autoFocus
         />
         <button className="btn-add" onClick={addTodo}>
-          + ADD
+          {isArcade ? '+ ADD' : 'Add'}
         </button>
       </div>
 
       {todos.length > 0 && (
         <div className="counter">
-          <span>{remaining}</span> MISSIONS LEFT
+          <span>{remaining}</span> {isArcade ? 'MISSIONS LEFT' : 'tasks left'}
         </div>
       )}
 
       <div className="todo-list">
         {!mounted ? null : todos.length === 0 ? (
           <div className="empty-state">
-            <p>NO QUESTS YET</p>
-            <p className="blink" style={{ marginTop: '1rem' }}>
-              INSERT COIN TO BEGIN_
-            </p>
+            {isArcade ? (
+              <>
+                <p>NO QUESTS YET</p>
+                <p className="blink" style={{ marginTop: '1rem' }}>
+                  INSERT COIN TO BEGIN_
+                </p>
+              </>
+            ) : (
+              <>
+                <p>No tasks yet</p>
+                <p style={{ marginTop: '1rem' }}>Add one to get started.</p>
+              </>
+            )}
           </div>
         ) : (
           todos.map(todo => (
