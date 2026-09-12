@@ -76,6 +76,19 @@ export default function Home() {
     setTodos(prev => prev.filter(t => t.id !== id))
   }
 
+  const setPriority = (id: string, position: number) => {
+    setTodos(prev => {
+      const from = prev.findIndex(t => t.id === id)
+      if (from === -1) return prev
+      const to = Math.min(Math.max(1, position), prev.length) - 1
+      if (to === from) return prev
+      const next = [...prev]
+      const [item] = next.splice(from, 1)
+      next.splice(to, 0, item)
+      return next
+    })
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') addTodo()
   }
@@ -140,11 +153,23 @@ export default function Home() {
             )}
           </div>
         ) : (
-          todos.map(todo => (
+          todos.map((todo, index) => (
             <div
               key={todo.id}
               className={`todo-item ${todo.done ? 'done' : ''}`}
             >
+              <select
+                className="priority-select"
+                value={index + 1}
+                onChange={e => setPriority(todo.id, Number(e.target.value))}
+                aria-label={`Priority for "${todo.text}"`}
+              >
+                {todos.map((_, i) => (
+                  <option key={i} value={i + 1}>
+                    {i + 1}
+                  </option>
+                ))}
+              </select>
               <button
                 className="todo-check"
                 onClick={() => toggleTodo(todo.id)}
