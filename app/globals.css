@@ -230,43 +230,56 @@ html[data-theme='standard'] body::after {
   margin-bottom: 1rem;
 }
 
-.theme-select {
+.panel {
+  border: 1px solid var(--surface-border);
+  border-radius: calc(var(--radius) + 10px);
+  padding: 1.75rem;
+  box-shadow: var(--glow);
+}
+
+/* Shared base for every dropdown control (theme, priority, category) */
+.select-control {
   background: var(--surface);
   backdrop-filter: blur(var(--blur));
   border: 1px solid var(--surface-border);
   border-radius: var(--radius);
   color: var(--text-dim);
   font-family: var(--font-arcade), 'Orbitron', sans-serif;
-  font-size: 10px;
-  letter-spacing: 1px;
-  padding: 0.5rem 0.85rem;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  padding: 0.5rem 0.75rem;
   cursor: pointer;
   transition: border-color 0.2s, color 0.2s;
 }
 
-html[data-theme='crt'] .theme-select {
+html[data-theme='crt'] .select-control {
   font-family: var(--font-retro), 'Press Start 2P', monospace;
+  font-size: 9px;
 }
 
-html[data-theme='paper'] .theme-select {
+html[data-theme='paper'] .select-control {
   font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
 }
 
-html[data-theme='standard'] .theme-select {
+html[data-theme='standard'] .select-control {
   font-family: var(--font-system);
   font-size: 13px;
   letter-spacing: normal;
 }
 
-.theme-select:hover {
+.select-control:hover {
   border-color: var(--secondary);
   color: var(--text);
 }
 
-.theme-select:focus {
+.select-control:focus {
   outline: none;
   border-color: var(--secondary);
   box-shadow: var(--glow);
+}
+
+.theme-select {
+  letter-spacing: 1px;
 }
 
 h1 {
@@ -340,12 +353,17 @@ html[data-theme='standard'] h1 {
 
 .input-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.6rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.new-category-select {
+  flex-shrink: 0;
 }
 
 .input-row input {
-  flex: 1;
+  flex: 1 1 200px;
   background: var(--surface);
   backdrop-filter: blur(var(--blur));
   border: 1px solid var(--surface-border);
@@ -437,6 +455,52 @@ html[data-theme='crt'] .btn-add:hover {
   transform: scale(0.96);
 }
 
+.filter-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+}
+
+.filter-tab {
+  background: transparent;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+html[data-theme='crt'] .filter-tab {
+  font-family: var(--font-retro), 'Press Start 2P', monospace;
+  font-size: 8px;
+}
+
+html[data-theme='paper'] .filter-tab {
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+}
+
+html[data-theme='standard'] .filter-tab {
+  font-family: var(--font-system);
+  font-size: 12px;
+  letter-spacing: normal;
+}
+
+.filter-tab:hover {
+  border-color: var(--secondary);
+  color: var(--text);
+}
+
+.filter-tab.active {
+  background: var(--btn-bg);
+  border-color: transparent;
+  color: var(--btn-text);
+}
+
 .todo-list {
   display: flex;
   flex-direction: column;
@@ -445,13 +509,13 @@ html[data-theme='crt'] .btn-add:hover {
 
 .todo-item {
   display: flex;
-  align-items: center;
-  gap: 0.85rem;
+  flex-direction: column;
+  gap: 0.55rem;
   background: var(--surface);
   backdrop-filter: blur(var(--blur));
   border: 1px solid var(--surface-border);
   border-radius: var(--radius);
-  padding: 0.9rem 1.1rem;
+  padding: 0.85rem 1rem;
   transition: border-color 0.2s, transform 0.15s;
 }
 
@@ -477,42 +541,62 @@ html[data-theme='crt'] .todo-item.done {
   opacity: 0.5;
 }
 
+.todo-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.todo-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.todo-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-left: calc(22px + 0.75rem);
+}
+
+html[data-theme='crt'] .todo-meta {
+  padding-left: calc(18px + 0.75rem);
+}
+
 .priority-select {
   width: 42px;
   flex-shrink: 0;
-  background: var(--surface);
-  backdrop-filter: blur(var(--blur));
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius);
-  color: var(--text-dim);
-  font-family: var(--font-arcade), 'Orbitron', sans-serif;
-  font-size: 11px;
   text-align: center;
   text-align-last: center;
   padding: 0.3rem 0.1rem;
-  cursor: pointer;
-  transition: border-color 0.2s, color 0.2s;
 }
 
-.priority-select:hover,
-.priority-select:focus {
+.category-select {
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.category-select[data-category='daily'] {
   border-color: var(--secondary);
-  color: var(--text);
-  outline: none;
+  color: var(--secondary);
 }
 
-html[data-theme='crt'] .priority-select {
-  font-family: var(--font-retro), 'Press Start 2P', monospace;
-  font-size: 9px;
+.category-select[data-category='weekly'] {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
-html[data-theme='paper'] .priority-select {
-  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+.category-select[data-category='monthly'] {
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
-html[data-theme='standard'] .priority-select {
-  font-family: var(--font-system);
-  font-size: 13px;
+.category-select[data-category='once'] {
+  border-color: var(--surface-border);
+  color: var(--text-dim);
 }
 
 .todo-check {
@@ -681,6 +765,10 @@ html[data-theme='crt'] .btn-delete:hover {
   font-size: 14px;
   font-weight: 600;
   padding: 3.5rem 0;
+}
+
+.empty-state.small {
+  padding: 1.5rem 0;
 }
 
 html[data-theme='crt'] .empty-state {
