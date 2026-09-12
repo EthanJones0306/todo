@@ -42,6 +42,8 @@ export default function Home() {
   const [input, setInput] = useState('')
   const [mounted, setMounted] = useState(false)
   const [theme, setTheme] = useState<Theme>('neon')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editText, setEditText] = useState('')
 
   useEffect(() => {
     setTodos(loadTodos())
@@ -91,6 +93,30 @@ export default function Home() {
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') addTodo()
+  }
+
+  const startEdit = (todo: Todo) => {
+    setEditingId(todo.id)
+    setEditText(todo.text)
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+    setEditText('')
+  }
+
+  const saveEdit = (id: string) => {
+    const text = editText.trim()
+    if (text) {
+      setTodos(prev => prev.map(t => (t.id === id ? { ...t, text } : t)))
+    }
+    setEditingId(null)
+    setEditText('')
+  }
+
+  const handleEditKeyDown = (e: React.KeyboardEvent, id: string) => {
+    if (e.key === 'Enter') saveEdit(id)
+    if (e.key === 'Escape') cancelEdit()
   }
 
   const remaining = todos.filter(t => !t.done).length
@@ -177,7 +203,27 @@ export default function Home() {
               >
                 {todo.done ? '✓' : ''}
               </button>
-              <span className="todo-text">{todo.text}</span>
+              {editingId === todo.id ? (
+                <input
+                  className="todo-edit-input"
+                  value={editText}
+                  onChange={e => setEditText(e.target.value)}
+                  onKeyDown={e => handleEditKeyDown(e, todo.id)}
+                  onBlur={() => saveEdit(todo.id)}
+                  autoFocus
+                />
+              ) : (
+                <span className="todo-text" onDoubleClick={() => startEdit(todo)}>
+                  {todo.text}
+                </span>
+              )}
+              <button
+                className="btn-edit"
+                onClick={() => startEdit(todo)}
+                aria-label="Edit todo"
+              >
+                ✎
+              </button>
               <button
                 className="btn-delete"
                 onClick={() => deleteTodo(todo.id)}

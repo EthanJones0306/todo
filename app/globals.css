@@ -577,6 +577,34 @@ html[data-theme='paper'] .todo-item.done .todo-check {
   font-size: 15px;
   font-weight: 600;
   word-break: break-word;
+  cursor: text;
+}
+
+.todo-edit-input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-body), 'Rajdhani', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--secondary);
+  outline: none;
+  padding: 0 0 2px 0;
+}
+
+html[data-theme='crt'] .todo-edit-input {
+  font-family: var(--font-retro), 'Press Start 2P', monospace;
+  font-size: 10px;
+}
+
+html[data-theme='paper'] .todo-edit-input {
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+}
+
+html[data-theme='standard'] .todo-edit-input {
+  font-family: var(--font-system);
 }
 
 html[data-theme='crt'] .todo-text {
@@ -586,6 +614,26 @@ html[data-theme='crt'] .todo-text {
 .todo-item.done .todo-text {
   text-decoration: line-through;
   color: var(--text-dim);
+}
+
+.btn-edit {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0.35rem;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.15s, color 0.2s;
+}
+
+.todo-item:hover .btn-edit {
+  opacity: 1;
+}
+
+.btn-edit:hover {
+  color: var(--secondary);
+  transform: scale(1.15);
 }
 
 .btn-delete {
