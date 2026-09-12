@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Orbitron, Rajdhani, Press_Start_2P, Special_Elite } from 'next/font/google'
+import { Orbitron, Rajdhani, Press_Start_2P, Playfair_Display, EB_Garamond } from 'next/font/google'
 import './globals.css'
 
 const orbitron = Orbitron({
@@ -20,8 +20,15 @@ const pressStart = Press_Start_2P({
   variable: '--font-retro',
 })
 
-const specialElite = Special_Elite({
-  weight: '400',
+const playfairDisplay = Playfair_Display({
+  weight: ['700', '800'],
+  style: ['italic', 'normal'],
+  subsets: ['latin'],
+  variable: '--font-paper-heading',
+})
+
+const ebGaramond = EB_Garamond({
+  weight: ['400', '600'],
   subsets: ['latin'],
   variable: '--font-paper',
 })
@@ -45,7 +52,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body
-        className={`${orbitron.variable} ${rajdhani.variable} ${pressStart.variable} ${specialElite.variable}`}
+        className={`${orbitron.variable} ${rajdhani.variable} ${pressStart.variable} ${playfairDisplay.variable} ${ebGaramond.variable}`}
       >
         {children}
       </body>

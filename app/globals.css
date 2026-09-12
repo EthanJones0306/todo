@@ -101,7 +101,7 @@ html[data-theme='crt'] body {
 }
 
 html[data-theme='paper'] body {
-  font-family: var(--font-paper), 'Courier New', monospace;
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
   line-height: 1.7;
   font-size: 15px;
 }
@@ -207,7 +207,7 @@ html[data-theme='crt'] .btn-theme {
 }
 
 html[data-theme='paper'] .btn-theme {
-  font-family: var(--font-paper), 'Courier New', monospace;
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
 }
 
 .btn-theme:hover {
@@ -244,19 +244,20 @@ html[data-theme='crt'] h1 {
 }
 
 html[data-theme='paper'] h1 {
-  font-family: var(--font-paper), 'Courier New', monospace;
+  font-family: var(--font-paper-heading), 'Playfair Display', Georgia, serif;
   background: none;
   -webkit-background-clip: border-box;
   background-clip: border-box;
   color: var(--primary);
   filter: none;
   text-shadow: none;
-  font-weight: 400;
-  font-size: 26px;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  border-bottom: 2px solid var(--primary);
-  padding-bottom: 0.75rem;
+  font-weight: 700;
+  font-style: italic;
+  font-size: 34px;
+  letter-spacing: 0.5px;
+  text-transform: none;
+  border-bottom: 1px solid var(--surface-border);
+  padding-bottom: 0.6rem;
   animation: none;
 }
 
@@ -297,7 +298,7 @@ html[data-theme='crt'] .input-row input {
 }
 
 html[data-theme='paper'] .input-row input {
-  font-family: var(--font-paper), 'Courier New', monospace;
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
   font-size: 14px;
 }
 
@@ -335,9 +336,9 @@ html[data-theme='crt'] .btn-add {
 }
 
 html[data-theme='paper'] .btn-add {
-  font-family: var(--font-paper), 'Courier New', monospace;
-  letter-spacing: 2px;
-  text-transform: uppercase;
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+  font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
 .btn-add:hover {
@@ -485,7 +486,7 @@ html[data-theme='crt'] .btn-delete {
 }
 
 html[data-theme='paper'] .btn-delete {
-  font-family: var(--font-paper), 'Courier New', monospace;
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
 }
 
 .todo-item:hover .btn-delete {
@@ -552,5 +553,5 @@ html[data-theme='crt'] .counter span {
 }
 
 html[data-theme='paper'] .counter span {
-  font-family: var(--font-paper), 'Courier New', monospace;
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
 }
