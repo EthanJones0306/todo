@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Orbitron, Rajdhani, Press_Start_2P, Playfair_Display, EB_Garamond } from 'next/font/google'
+import { Orbitron, Rajdhani, Press_Start_2P, Playfair_Display, EB_Garamond, Inter } from 'next/font/google'
 import './globals.css'
 
 const orbitron = Orbitron({
@@ -33,6 +33,12 @@ const ebGaramond = EB_Garamond({
   variable: '--font-paper',
 })
 
+const inter = Inter({
+  weight: ['400', '500', '600', '700'],
+  subsets: ['latin'],
+  variable: '--font-standard',
+})
+
 export const metadata: Metadata = {
   title: 'To-Do List',
   description: 'A todo list with neon, retro CRT, paper, and standard themes',
@@ -52,7 +58,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body
-        className={`${orbitron.variable} ${rajdhani.variable} ${pressStart.variable} ${playfairDisplay.variable} ${ebGaramond.variable}`}
+        className={`${orbitron.variable} ${rajdhani.variable} ${pressStart.variable} ${playfairDisplay.variable} ${ebGaramond.variable} ${inter.variable}`}
       >
         {children}
       </body>
