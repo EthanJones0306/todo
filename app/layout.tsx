@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Orbitron, Rajdhani, Press_Start_2P, Playfair_Display, EB_Garamond, Inter } from 'next/font/google'
+import { Orbitron, Rajdhani, Press_Start_2P, Playfair_Display, EB_Garamond, Inter, Space_Grotesk } from 'next/font/google'
 import './globals.css'
 
 const orbitron = Orbitron({
@@ -39,9 +39,15 @@ const inter = Inter({
   variable: '--font-standard',
 })
 
+const spaceGrotesk = Space_Grotesk({
+  weight: ['400', '500', '600', '700'],
+  subsets: ['latin'],
+  variable: '--font-sharp',
+})
+
 export const metadata: Metadata = {
   title: 'To-Do List',
-  description: 'A todo list with neon, retro CRT, paper, and standard themes',
+  description: 'A todo list with neon, retro CRT, paper, standard, midnight, forest, sunset, nord, slate, stone, zinc, and monochrome themes',
 }
 
 const THEME_INIT_SCRIPT = `try{document.documentElement.setAttribute('data-theme',localStorage.getItem('arcade-theme')||'neon')}catch(e){}`
@@ -58,7 +64,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body
-        className={`${orbitron.variable} ${rajdhani.variable} ${pressStart.variable} ${playfairDisplay.variable} ${ebGaramond.variable} ${inter.variable}`}
+        className={`${orbitron.variable} ${rajdhani.variable} ${pressStart.variable} ${playfairDisplay.variable} ${ebGaramond.variable} ${inter.variable} ${spaceGrotesk.variable}`}
       >
         {children}
       </body>

@@ -106,6 +106,206 @@ html[data-theme='standard'] {
   --btn-text: #ffffff;
 }
 
+/* THEME: midnight - dark premium, refined minimal look */
+html[data-theme='midnight'] {
+  --bg-1: #0f172a;
+  --bg-2: #1e293b;
+  --bg-3: #020617;
+  --surface: rgba(30, 41, 59, 0.75);
+  --surface-border: #334155;
+  --primary: #818cf8;
+  --primary-soft: rgba(129, 140, 248, 0.18);
+  --secondary: #22d3ee;
+  --secondary-soft: rgba(34, 211, 238, 0.18);
+  --accent: #a78bfa;
+  --danger: #f87171;
+  --text: #f1f5f9;
+  --text-dim: #94a3b8;
+  --done: #475569;
+  --glow: 0 0 0 3px rgba(129, 140, 248, 0.18);
+  --glow-strong: 0 20px 40px rgba(2, 6, 23, 0.4), 0 2px 8px rgba(2, 6, 23, 0.3);
+  --radius: 12px;
+  --blur: 20px;
+  --check-done-bg: var(--primary);
+  --btn-bg: linear-gradient(135deg, var(--primary), var(--accent));
+  --btn-text: #0f172a;
+}
+
+/* THEME: forest - nature inspired calm green theme */
+html[data-theme='forest'] {
+  --bg-1: #0f1f0f;
+  --bg-2: #1a2e1a;
+  --bg-3: #081208;
+  --surface: rgba(30, 50, 30, 0.6);
+  --surface-border: #3a5a3a;
+  --primary: #4ade80;
+  --primary-soft: rgba(74, 222, 128, 0.25);
+  --secondary: #86efac;
+  --secondary-soft: rgba(134, 239, 172, 0.25);
+  --accent: #a3e635;
+  --danger: #f87171;
+  --text: #e8f5e8;
+  --text-dim: #86a386;
+  --done: #3a5a3a;
+  --glow: 0 0 14px var(--primary-soft);
+  --glow-strong: 0 0 28px var(--primary-soft), 0 0 56px var(--secondary-soft);
+  --radius: 16px;
+  --blur: 12px;
+  --check-done-bg: linear-gradient(135deg, var(--primary), var(--secondary));
+  --btn-bg: linear-gradient(135deg, var(--primary), var(--accent));
+  --btn-text: #081208;
+}
+
+/* THEME: sunset - warm orange/pink gradient theme */
+html[data-theme='sunset'] {
+  --bg-1: #2d1414;
+  --bg-2: #4a1f1a;
+  --bg-3: #1a0a0a;
+  --surface: rgba(60, 35, 35, 0.6);
+  --surface-border: #8b4a4a;
+  --primary: #fb923c;
+  --primary-soft: rgba(251, 146, 60, 0.3);
+  --secondary: #f472b6;
+  --secondary-soft: rgba(244, 114, 182, 0.3);
+  --accent: #f97316;
+  --danger: #ef4444;
+  --text: #fff7ed;
+  --text-dim: #c9a9a2;
+  --done: #6b3a3a;
+  --glow: 0 0 16px var(--primary-soft);
+  --glow-strong: 0 0 32px var(--primary-soft), 0 0 64px var(--secondary-soft);
+  --radius: 18px;
+  --blur: 14px;
+  --check-done-bg: linear-gradient(135deg, var(--primary), var(--secondary));
+  --btn-bg: linear-gradient(135deg, var(--primary), var(--accent));
+  --btn-text: #1a0a0a;
+}
+
+/* THEME: nord - popular nord color palette (cool arctic theme) */
+html[data-theme='nord'] {
+  --bg-1: #2e3440;
+  --bg-2: #3b4252;
+  --bg-3: #242933;
+  --surface: rgba(46, 52, 64, 0.7);
+  --surface-border: #4c566a;
+  --primary: #88c0d0;
+  --primary-soft: rgba(136, 192, 208, 0.2);
+  --secondary: #81a1c1;
+  --secondary-soft: rgba(129, 161, 193, 0.2);
+  --accent: #b48ead;
+  --danger: #bf616a;
+  --text: #eceff4;
+  --text-dim: #616e88;
+  --done: #4c566a;
+  --glow: 0 0 12px var(--primary-soft);
+  --glow-strong: 0 0 24px var(--primary-soft), 0 0 48px var(--secondary-soft);
+  --radius: 10px;
+  --blur: 16px;
+  --check-done-bg: linear-gradient(135deg, var(--primary), var(--secondary));
+  --btn-bg: linear-gradient(135deg, var(--primary), var(--accent));
+  --btn-text: #2e3440;
+}
+
+/* THEME: slate - cool blue-gray neutral, professional */
+html[data-theme='slate'] {
+  --bg-1: #f8fafc;
+  --bg-2: #f1f5f9;
+  --bg-3: #e2e8f0;
+  --surface: rgba(255, 255, 255, 0.8);
+  --surface-border: #cbd5e1;
+  --primary: #475569;
+  --primary-soft: rgba(71, 85, 105, 0.12);
+  --secondary: #64748b;
+  --secondary-soft: rgba(100, 116, 139, 0.12);
+  --accent: #94a3b8;
+  --danger: #dc2626;
+  --text: #1e293b;
+  --text-dim: #64748b;
+  --done: #cbd5e1;
+  --glow: 0 0 0 3px rgba(71, 85, 105, 0.15);
+  --glow-strong: 0 20px 40px rgba(30, 41, 59, 0.08), 0 2px 8px rgba(30, 41, 59, 0.04);
+  --radius: 10px;
+  --blur: 20px;
+  --check-done-bg: var(--primary);
+  --btn-bg: var(--primary);
+  --btn-text: #ffffff;
+}
+
+/* THEME: stone - warm gray/beige neutral, earthy */
+html[data-theme='stone'] {
+  --bg-1: #fafaf9;
+  --bg-2: #f5f5f4;
+  --bg-3: #e7e5e4;
+  --surface: rgba(255, 255, 255, 0.8);
+  --surface-border: #d6d3d1;
+  --primary: #57534e;
+  --primary-soft: rgba(87, 83, 78, 0.12);
+  --secondary: #78716c;
+  --secondary-soft: rgba(120, 113, 108, 0.12);
+  --accent: #a8a29e;
+  --danger: #b91c1c;
+  --text: #292524;
+  --text-dim: #78716c;
+  --done: #d6d3d1;
+  --glow: 0 0 0 3px rgba(87, 83, 78, 0.15);
+  --glow-strong: 0 20px 40px rgba(41, 37, 36, 0.08), 0 2px 8px rgba(41, 37, 36, 0.04);
+  --radius: 10px;
+  --blur: 20px;
+  --check-done-bg: var(--primary);
+  --btn-bg: var(--primary);
+  --btn-text: #ffffff;
+}
+
+/* THEME: zinc - true neutral gray, balanced */
+html[data-theme='zinc'] {
+  --bg-1: #fafafa;
+  --bg-2: #f4f4f5;
+  --bg-3: #e4e4e7;
+  --surface: rgba(255, 255, 255, 0.8);
+  --surface-border: #d4d4d8;
+  --primary: #3f3f46;
+  --primary-soft: rgba(63, 63, 70, 0.12);
+  --secondary: #52525b;
+  --secondary-soft: rgba(82, 82, 91, 0.12);
+  --accent: #71717a;
+  --danger: #dc2626;
+  --text: #18181b;
+  --text-dim: #71717a;
+  --done: #d4d4d8;
+  --glow: 0 0 0 3px rgba(63, 63, 70, 0.15);
+  --glow-strong: 0 20px 40px rgba(24, 24, 27, 0.08), 0 2px 8px rgba(24, 24, 27, 0.04);
+  --radius: 10px;
+  --blur: 20px;
+  --check-done-bg: var(--primary);
+  --btn-bg: var(--primary);
+  --btn-text: #ffffff;
+}
+
+/* THEME: monochrome - pure black/white, high contrast minimal */
+html[data-theme='monochrome'] {
+  --bg-1: #ffffff;
+  --bg-2: #ffffff;
+  --bg-3: #fafafa;
+  --surface: #ffffff;
+  --surface-border: #e5e5e5;
+  --primary: #000000;
+  --primary-soft: rgba(0, 0, 0, 0.08);
+  --secondary: #333333;
+  --secondary-soft: rgba(51, 51, 51, 0.08);
+  --accent: #666666;
+  --danger: #000000;
+  --text: #000000;
+  --text-dim: #737373;
+  --done: #e5e5e5;
+  --glow: 0 0 0 3px rgba(0, 0, 0, 0.12);
+  --glow-strong: 0 10px 30px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+  --radius: 6px;
+  --blur: 0px;
+  --check-done-bg: #000000;
+  --btn-bg: #000000;
+  --btn-text: #ffffff;
+}
+
 body {
   font-family: var(--font-body), 'Rajdhani', sans-serif;
   background: radial-gradient(ellipse at top, var(--bg-2) 0%, var(--bg-1) 55%, var(--bg-3) 100%);
@@ -132,7 +332,63 @@ html[data-theme='paper'] body {
 }
 
 html[data-theme='standard'] body {
-  font-family: var(--font-standard), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+html[data-theme='midnight'] body {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+html[data-theme='forest'] body {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+html[data-theme='sunset'] body {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+html[data-theme='nord'] body {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+html[data-theme='slate'] body {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+html[data-theme='stone'] body {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+html[data-theme='zinc'] body {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+html[data-theme='monochrome'] body {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
   font-size: 16px;
   font-weight: 400;
@@ -213,6 +469,18 @@ html[data-theme='standard'] body::after {
   display: none;
 }
 
+/* New themes: no decoration, flat page */
+html[data-theme='midnight'] body::before,
+html[data-theme='midnight'] body::after,
+html[data-theme='forest'] body::before,
+html[data-theme='forest'] body::after,
+html[data-theme='sunset'] body::before,
+html[data-theme='sunset'] body::after,
+html[data-theme='nord'] body::before,
+html[data-theme='nord'] body::after {
+  display: none;
+}
+
 .container {
   max-width: 620px;
   margin: 0 auto;
@@ -223,7 +491,69 @@ html[data-theme='standard'] body::after {
 .topbar {
   display: flex;
   justify-content: flex-end;
+  gap: 1rem;
+  align-items: center;
   margin-bottom: 1rem;
+}
+
+.mode-toggle {
+  display: flex;
+  gap: 0.25rem;
+  background: var(--surface);
+  backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  padding: 0.25rem;
+}
+
+.mode-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: calc(var(--radius) - 4px);
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+
+html[data-theme='neon'] .mode-btn,
+html[data-theme='crt'] .mode-btn,
+html[data-theme='paper'] .mode-btn {
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+html[data-theme='crt'] .mode-btn {
+  font-family: var(--font-retro), 'Press Start 2P', monospace;
+  font-size: 9px;
+}
+
+html[data-theme='paper'] .mode-btn {
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+}
+
+.mode-btn:hover {
+  color: var(--text);
+}
+
+.mode-btn.active {
+  background: var(--btn-bg);
+  color: var(--btn-text);
+}
+
+html[data-theme='standard'] .mode-btn,
+html[data-theme='midnight'] .mode-btn,
+html[data-theme='forest'] .mode-btn,
+html[data-theme='sunset'] .mode-btn,
+html[data-theme='nord'] .mode-btn {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: normal;
 }
 
 .panel {
@@ -265,11 +595,75 @@ html[data-theme='paper'] .select-control {
 }
 
 html[data-theme='standard'] .select-control {
-  font-family: var(--font-standard), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 13px;
   font-weight: 500;
   letter-spacing: normal;
   box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
+}
+
+html[data-theme='midnight'] .select-control {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: normal;
+  box-shadow: 0 1px 2px rgba(2, 6, 23, 0.3);
+}
+
+html[data-theme='forest'] .select-control {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: normal;
+  box-shadow: 0 1px 2px rgba(8, 18, 8, 0.3);
+}
+
+html[data-theme='sunset'] .select-control {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: normal;
+  box-shadow: 0 1px 2px rgba(26, 10, 10, 0.3);
+}
+
+html[data-theme='nord'] .select-control {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: normal;
+  box-shadow: 0 1px 2px rgba(36, 41, 51, 0.3);
+}
+
+html[data-theme='slate'] .select-control {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: normal;
+  box-shadow: 0 1px 2px rgba(30, 41, 59, 0.04);
+}
+
+html[data-theme='stone'] .select-control {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: normal;
+  box-shadow: 0 1px 2px rgba(41, 37, 36, 0.04);
+}
+
+html[data-theme='zinc'] .select-control {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: normal;
+  box-shadow: 0 1px 2px rgba(24, 24, 27, 0.04);
+}
+
+html[data-theme='monochrome'] .select-control {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: normal;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .select-control:hover {
@@ -334,7 +728,124 @@ html[data-theme='paper'] h1 {
 }
 
 html[data-theme='standard'] h1 {
-  font-family: var(--font-standard), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--text);
+  filter: none;
+  text-shadow: none;
+  font-weight: 800;
+  font-size: 27px;
+  letter-spacing: -0.02em;
+  text-transform: none;
+  animation: none;
+}
+
+html[data-theme='midnight'] h1 {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--text);
+  filter: none;
+  text-shadow: none;
+  font-weight: 800;
+  font-size: 27px;
+  letter-spacing: -0.02em;
+  text-transform: none;
+  animation: none;
+}
+
+html[data-theme='forest'] h1 {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 18px var(--primary-soft));
+  font-weight: 800;
+  font-size: 27px;
+  letter-spacing: -0.02em;
+  text-transform: none;
+  animation: none;
+}
+
+html[data-theme='sunset'] h1 {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 18px var(--primary-soft));
+  font-weight: 800;
+  font-size: 27px;
+  letter-spacing: -0.02em;
+  text-transform: none;
+  animation: none;
+}
+
+html[data-theme='nord'] h1 {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 18px var(--primary-soft));
+  font-weight: 800;
+  font-size: 27px;
+  letter-spacing: -0.02em;
+  text-transform: none;
+  animation: none;
+}
+
+html[data-theme='slate'] h1 {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--text);
+  filter: none;
+  text-shadow: none;
+  font-weight: 800;
+  font-size: 27px;
+  letter-spacing: -0.02em;
+  text-transform: none;
+  animation: none;
+}
+
+html[data-theme='stone'] h1 {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--text);
+  filter: none;
+  text-shadow: none;
+  font-weight: 800;
+  font-size: 27px;
+  letter-spacing: -0.02em;
+  text-transform: none;
+  animation: none;
+}
+
+html[data-theme='zinc'] h1 {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--text);
+  filter: none;
+  text-shadow: none;
+  font-weight: 800;
+  font-size: 27px;
+  letter-spacing: -0.02em;
+  text-transform: none;
+  animation: none;
+}
+
+html[data-theme='monochrome'] h1 {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: none;
   -webkit-background-clip: border-box;
   background-clip: border-box;
@@ -395,11 +906,75 @@ html[data-theme='paper'] .input-row input {
 }
 
 html[data-theme='standard'] .input-row input {
-  font-family: var(--font-standard), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 15px;
   font-weight: 400;
   background: #ffffff;
   box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
+}
+
+html[data-theme='midnight'] .input-row input {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(2, 6, 23, 0.3);
+}
+
+html[data-theme='forest'] .input-row input {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(8, 18, 8, 0.3);
+}
+
+html[data-theme='sunset'] .input-row input {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(26, 10, 10, 0.3);
+}
+
+html[data-theme='nord'] .input-row input {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(36, 41, 51, 0.3);
+}
+
+html[data-theme='slate'] .input-row input {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(30, 41, 59, 0.04);
+}
+
+html[data-theme='stone'] .input-row input {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(41, 37, 36, 0.04);
+}
+
+html[data-theme='zinc'] .input-row input {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(24, 24, 27, 0.04);
+}
+
+html[data-theme='monochrome'] .input-row input {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .input-row input:focus {
@@ -442,7 +1017,71 @@ html[data-theme='paper'] .btn-add {
 }
 
 html[data-theme='standard'] .btn-add {
-  font-family: var(--font-standard), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: normal;
+  box-shadow: 0 4px 14px var(--primary-soft);
+}
+
+html[data-theme='midnight'] .btn-add {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: normal;
+  box-shadow: 0 4px 14px var(--primary-soft);
+}
+
+html[data-theme='forest'] .btn-add {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: normal;
+  box-shadow: 0 4px 18px var(--primary-soft);
+}
+
+html[data-theme='sunset'] .btn-add {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: normal;
+  box-shadow: 0 4px 18px var(--primary-soft);
+}
+
+html[data-theme='nord'] .btn-add {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: normal;
+  box-shadow: 0 4px 14px var(--primary-soft);
+}
+
+html[data-theme='slate'] .btn-add {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: normal;
+  box-shadow: 0 4px 14px var(--primary-soft);
+}
+
+html[data-theme='stone'] .btn-add {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: normal;
+  box-shadow: 0 4px 14px var(--primary-soft);
+}
+
+html[data-theme='zinc'] .btn-add {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: normal;
+  box-shadow: 0 4px 14px var(--primary-soft);
+}
+
+html[data-theme='monochrome'] .btn-add {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 14px;
   font-weight: 600;
   letter-spacing: normal;
@@ -450,6 +1089,38 @@ html[data-theme='standard'] .btn-add {
 }
 
 html[data-theme='standard'] .btn-add:hover {
+  box-shadow: 0 6px 20px var(--primary-soft);
+}
+
+html[data-theme='midnight'] .btn-add:hover {
+  box-shadow: 0 6px 20px var(--primary-soft);
+}
+
+html[data-theme='forest'] .btn-add:hover {
+  box-shadow: 0 6px 24px var(--primary-soft);
+}
+
+html[data-theme='sunset'] .btn-add:hover {
+  box-shadow: 0 6px 24px var(--primary-soft);
+}
+
+html[data-theme='nord'] .btn-add:hover {
+  box-shadow: 0 6px 20px var(--primary-soft);
+}
+
+html[data-theme='slate'] .btn-add:hover {
+  box-shadow: 0 6px 20px var(--primary-soft);
+}
+
+html[data-theme='stone'] .btn-add:hover {
+  box-shadow: 0 6px 20px var(--primary-soft);
+}
+
+html[data-theme='zinc'] .btn-add:hover {
+  box-shadow: 0 6px 20px var(--primary-soft);
+}
+
+html[data-theme='monochrome'] .btn-add:hover {
   box-shadow: 0 6px 20px var(--primary-soft);
 }
 
@@ -464,6 +1135,268 @@ html[data-theme='crt'] .btn-add:hover {
 
 .btn-add:active {
   transform: scale(0.96);
+}
+
+.input-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.due-date-input {
+  flex-shrink: 0;
+  width: 160px;
+}
+
+html[data-theme='crt'] .due-date-input {
+  font-family: var(--font-retro), 'Press Start 2P', monospace;
+  font-size: 9px;
+  padding: 0.5rem;
+}
+
+html[data-theme='paper'] .due-date-input {
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+  font-size: 13px;
+}
+
+html[data-theme='standard'] .due-date-input,
+html[data-theme='midnight'] .due-date-input,
+html[data-theme='forest'] .due-date-input,
+html[data-theme='sunset'] .due-date-input,
+html[data-theme='nord'] .due-date-input,
+html[data-theme='slate'] .due-date-input,
+html[data-theme='stone'] .due-date-input,
+html[data-theme='zinc'] .due-date-input,
+html[data-theme='monochrome'] .due-date-input {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.recurrence-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  flex: 1 1 200px;
+}
+
+.recurrence-day {
+  background: var(--surface);
+  backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--surface-border);
+  border-radius: calc(var(--radius) - 6px);
+  color: var(--text-dim);
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+html[data-theme='crt'] .recurrence-day {
+  font-family: var(--font-retro), 'Press Start 2P', monospace;
+  font-size: 8px;
+}
+
+html[data-theme='paper'] .recurrence-day {
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+  font-size: 11px;
+}
+
+html[data-theme='standard'] .recurrence-day,
+html[data-theme='midnight'] .recurrence-day,
+html[data-theme='forest'] .recurrence-day,
+html[data-theme='sunset'] .recurrence-day,
+html[data-theme='nord'] .recurrence-day,
+html[data-theme='slate'] .recurrence-day,
+html[data-theme='stone'] .recurrence-day,
+html[data-theme='zinc'] .recurrence-day,
+html[data-theme='monochrome'] .recurrence-day {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: normal;
+}
+
+.recurrence-day:hover {
+  border-color: var(--secondary);
+  color: var(--text);
+}
+
+.recurrence-day.active {
+  background: var(--btn-bg);
+  border-color: transparent;
+  color: var(--btn-text);
+}
+
+.counters {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.total-counter {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+html[data-theme='crt'] .total-counter {
+  font-size: 9px;
+}
+
+html[data-theme='paper'] .total-counter,
+html[data-theme='standard'] .total-counter,
+html[data-theme='midnight'] .total-counter,
+html[data-theme='forest'] .total-counter,
+html[data-theme='sunset'] .total-counter,
+html[data-theme='nord'] .total-counter,
+html[data-theme='slate'] .total-counter,
+html[data-theme='stone'] .total-counter,
+html[data-theme='zinc'] .total-counter,
+html[data-theme='monochrome'] .total-counter {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.total-counter span {
+  color: var(--primary);
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 14px;
+}
+
+html[data-theme='crt'] .total-counter span {
+  font-family: var(--font-retro), 'Press Start 2P', monospace;
+  font-size: 9px;
+}
+
+html[data-theme='paper'] .total-counter span {
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+}
+
+html[data-theme='standard'] .total-counter span,
+html[data-theme='midnight'] .total-counter span,
+html[data-theme='forest'] .total-counter span,
+html[data-theme='sunset'] .total-counter span,
+html[data-theme='nord'] .total-counter span,
+html[data-theme='slate'] .total-counter span,
+html[data-theme='stone'] .total-counter span,
+html[data-theme='zinc'] .total-counter span,
+html[data-theme='monochrome'] .total-counter span {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.todo-item.overdue {
+  border-color: var(--danger);
+}
+
+html[data-theme='standard'] .todo-item.overdue,
+html[data-theme='midnight'] .todo-item.overdue,
+html[data-theme='forest'] .todo-item.overdue,
+html[data-theme='sunset'] .todo-item.overdue,
+html[data-theme='nord'] .todo-item.overdue {
+  background: var(--danger);
+  opacity: 0.1;
+}
+
+.todo-item.due-today {
+  border-color: var(--accent);
+}
+
+.todo-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-left: calc(22px + 0.75rem);
+  flex-wrap: wrap;
+}
+
+html[data-theme='crt'] .todo-meta {
+  padding-left: calc(18px + 0.75rem);
+}
+
+html[data-theme='standard'] .todo-meta,
+html[data-theme='midnight'] .todo-meta,
+html[data-theme='forest'] .todo-meta,
+html[data-theme='sunset'] .todo-meta,
+html[data-theme='nord'] .todo-meta {
+  padding-left: calc(22px + 0.5rem);
+}
+
+.due-date {
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+html[data-theme='crt'] .due-date {
+  font-family: var(--font-retro), 'Press Start 2P', monospace;
+  font-size: 8px;
+}
+
+html[data-theme='paper'] .due-date {
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+  font-size: 12px;
+}
+
+html[data-theme='standard'] .due-date,
+html[data-theme='midnight'] .due-date,
+html[data-theme='forest'] .due-date,
+html[data-theme='sunset'] .due-date,
+html[data-theme='nord'] .due-date {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: normal;
+}
+
+.due-date.overdue {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.due-date.due-today {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.recurrence-indicator {
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 9px;
+  color: var(--secondary);
+  opacity: 0.8;
+}
+
+html[data-theme='crt'] .recurrence-indicator {
+  font-family: var(--font-retro), 'Press Start 2P', monospace;
+  font-size: 7px;
+}
+
+html[data-theme='paper'] .recurrence-indicator {
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+  font-size: 11px;
+}
+
+html[data-theme='standard'] .recurrence-indicator,
+html[data-theme='midnight'] .recurrence-indicator,
+html[data-theme='forest'] .recurrence-indicator,
+html[data-theme='sunset'] .recurrence-indicator,
+html[data-theme='nord'] .recurrence-indicator {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 10px;
+  letter-spacing: normal;
 }
 
 .filter-tabs {
@@ -496,7 +1429,55 @@ html[data-theme='paper'] .filter-tab {
 }
 
 html[data-theme='standard'] .filter-tab {
-  font-family: var(--font-standard), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 12px;
+  letter-spacing: normal;
+}
+
+html[data-theme='midnight'] .filter-tab {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 12px;
+  letter-spacing: normal;
+}
+
+html[data-theme='forest'] .filter-tab {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 12px;
+  letter-spacing: normal;
+}
+
+html[data-theme='sunset'] .filter-tab {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 12px;
+  letter-spacing: normal;
+}
+
+html[data-theme='nord'] .filter-tab {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 12px;
+  letter-spacing: normal;
+}
+
+html[data-theme='slate'] .filter-tab {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 12px;
+  letter-spacing: normal;
+}
+
+html[data-theme='stone'] .filter-tab {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 12px;
+  letter-spacing: normal;
+}
+
+html[data-theme='zinc'] .filter-tab {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 12px;
+  letter-spacing: normal;
+}
+
+html[data-theme='monochrome'] .filter-tab {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 12px;
   letter-spacing: normal;
 }
@@ -576,6 +1557,191 @@ html[data-theme='standard'] .todo-item.done {
   opacity: 0.5;
 }
 
+html[data-theme='midnight'] .todo-list {
+  gap: 0;
+  border-top: 1px solid var(--surface-border);
+}
+
+html[data-theme='midnight'] .todo-item {
+  background: transparent;
+  backdrop-filter: none;
+  border: none;
+  border-bottom: 1px solid var(--surface-border);
+  border-radius: 0;
+  padding: 0.9rem 0.5rem;
+  transition: background 0.15s;
+}
+
+html[data-theme='midnight'] .todo-item:hover {
+  background: var(--primary-soft);
+  transform: none;
+}
+
+html[data-theme='midnight'] .todo-item.done {
+  opacity: 0.5;
+}
+
+html[data-theme='forest'] .todo-list {
+  gap: 0.65rem;
+  border-top: none;
+}
+
+html[data-theme='forest'] .todo-item {
+  background: var(--surface);
+  backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  transition: border-color 0.2s, transform 0.15s;
+}
+
+html[data-theme='forest'] .todo-item:hover {
+  border-color: var(--secondary-soft);
+  transform: translateX(2px);
+}
+
+html[data-theme='forest'] .todo-item.done {
+  opacity: 0.55;
+}
+
+html[data-theme='sunset'] .todo-list {
+  gap: 0.65rem;
+  border-top: none;
+}
+
+html[data-theme='sunset'] .todo-item {
+  background: var(--surface);
+  backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  transition: border-color 0.2s, transform 0.15s;
+}
+
+html[data-theme='sunset'] .todo-item:hover {
+  border-color: var(--secondary-soft);
+  transform: translateX(2px);
+}
+
+html[data-theme='sunset'] .todo-item.done {
+  opacity: 0.55;
+}
+
+html[data-theme='nord'] .todo-list {
+  gap: 0.65rem;
+  border-top: none;
+}
+
+html[data-theme='nord'] .todo-item {
+  background: var(--surface);
+  backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  transition: border-color 0.2s, transform 0.15s;
+}
+
+html[data-theme='nord'] .todo-item:hover {
+  border-color: var(--secondary-soft);
+  transform: translateX(2px);
+}
+
+html[data-theme='nord'] .todo-item.done {
+  opacity: 0.55;
+}
+
+html[data-theme='slate'] .todo-list {
+  gap: 0.65rem;
+  border-top: none;
+}
+
+html[data-theme='slate'] .todo-item {
+  background: var(--surface);
+  backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  transition: border-color 0.2s, transform 0.15s;
+}
+
+html[data-theme='slate'] .todo-item:hover {
+  border-color: var(--secondary-soft);
+  transform: translateX(2px);
+}
+
+html[data-theme='slate'] .todo-item.done {
+  opacity: 0.55;
+}
+
+html[data-theme='stone'] .todo-list {
+  gap: 0.65rem;
+  border-top: none;
+}
+
+html[data-theme='stone'] .todo-item {
+  background: var(--surface);
+  backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  transition: border-color 0.2s, transform 0.15s;
+}
+
+html[data-theme='stone'] .todo-item:hover {
+  border-color: var(--secondary-soft);
+  transform: translateX(2px);
+}
+
+html[data-theme='stone'] .todo-item.done {
+  opacity: 0.55;
+}
+
+html[data-theme='zinc'] .todo-list {
+  gap: 0.65rem;
+  border-top: none;
+}
+
+html[data-theme='zinc'] .todo-item {
+  background: var(--surface);
+  backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  transition: border-color 0.2s, transform 0.15s;
+}
+
+html[data-theme='zinc'] .todo-item:hover {
+  border-color: var(--secondary-soft);
+  transform: translateX(2px);
+}
+
+html[data-theme='zinc'] .todo-item.done {
+  opacity: 0.55;
+}
+
+html[data-theme='monochrome'] .todo-list {
+  gap: 0.65rem;
+  border-top: none;
+}
+
+html[data-theme='monochrome'] .todo-item {
+  background: var(--surface);
+  backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  transition: border-color 0.2s, transform 0.15s;
+}
+
+html[data-theme='monochrome'] .todo-item:hover {
+  border-color: var(--secondary-soft);
+  transform: translateX(2px);
+}
+
+html[data-theme='monochrome'] .todo-item.done {
+  opacity: 0.55;
+}
+
 .todo-main {
   display: flex;
   align-items: center;
@@ -599,6 +1765,18 @@ html[data-theme='standard'] .todo-item.done {
 
 html[data-theme='crt'] .todo-meta {
   padding-left: calc(18px + 0.75rem);
+}
+
+html[data-theme='standard'] .todo-meta,
+html[data-theme='midnight'] .todo-meta,
+html[data-theme='forest'] .todo-meta,
+html[data-theme='sunset'] .todo-meta,
+html[data-theme='nord'] .todo-meta,
+html[data-theme='slate'] .todo-meta,
+html[data-theme='stone'] .todo-meta,
+html[data-theme='zinc'] .todo-meta,
+html[data-theme='monochrome'] .todo-meta {
+  padding-left: calc(22px + 0.5rem);
 }
 
 .priority-select {
@@ -667,6 +1845,50 @@ html[data-theme='paper'] .todo-check {
   font-size: 12px;
 }
 
+html[data-theme='standard'] .todo-check,
+html[data-theme='midnight'] .todo-check,
+html[data-theme='forest'] .todo-check,
+html[data-theme='sunset'] .todo-check,
+html[data-theme='nord'] .todo-check,
+html[data-theme='slate'] .todo-check,
+html[data-theme='stone'] .todo-check,
+html[data-theme='zinc'] .todo-check,
+html[data-theme='monochrome'] .todo-check {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border-width: 2px;
+  color: var(--btn-text);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+html[data-theme='standard'] .todo-check:hover,
+html[data-theme='midnight'] .todo-check:hover,
+html[data-theme='forest'] .todo-check:hover,
+html[data-theme='sunset'] .todo-check:hover,
+html[data-theme='nord'] .todo-check:hover,
+html[data-theme='slate'] .todo-check:hover,
+html[data-theme='stone'] .todo-check:hover,
+html[data-theme='zinc'] .todo-check:hover,
+html[data-theme='monochrome'] .todo-check:hover {
+  box-shadow: 0 0 10px var(--secondary-soft);
+}
+
+html[data-theme='standard'] .todo-item.done .todo-check,
+html[data-theme='midnight'] .todo-item.done .todo-check,
+html[data-theme='forest'] .todo-item.done .todo-check,
+html[data-theme='sunset'] .todo-item.done .todo-check,
+html[data-theme='nord'] .todo-item.done .todo-check,
+html[data-theme='slate'] .todo-item.done .todo-check,
+html[data-theme='stone'] .todo-item.done .todo-check,
+html[data-theme='zinc'] .todo-item.done .todo-check,
+html[data-theme='monochrome'] .todo-item.done .todo-check {
+  border-color: var(--primary);
+  background: var(--check-done-bg);
+  color: var(--btn-text);
+}
+
 .todo-check:hover {
   box-shadow: 0 0 10px var(--secondary-soft);
 }
@@ -723,11 +1945,57 @@ html[data-theme='paper'] .todo-edit-input {
 }
 
 html[data-theme='standard'] .todo-edit-input {
-  font-family: var(--font-standard), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+html[data-theme='midnight'] .todo-edit-input {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+html[data-theme='forest'] .todo-edit-input {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+html[data-theme='sunset'] .todo-edit-input {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+html[data-theme='nord'] .todo-edit-input {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+html[data-theme='slate'] .todo-edit-input {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+html[data-theme='stone'] .todo-edit-input {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+html[data-theme='zinc'] .todo-edit-input {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+html[data-theme='monochrome'] .todo-edit-input {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 html[data-theme='crt'] .todo-text {
   font-size: 10px;
+}
+
+html[data-theme='standard'] .todo-text,
+html[data-theme='midnight'] .todo-text,
+html[data-theme='forest'] .todo-text,
+html[data-theme='sunset'] .todo-text,
+html[data-theme='nord'] .todo-text,
+html[data-theme='slate'] .todo-text,
+html[data-theme='stone'] .todo-text,
+html[data-theme='zinc'] .todo-text,
+html[data-theme='monochrome'] .todo-text {
+  font-size: 15px;
+  font-weight: 500;
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .todo-item.done .todo-text {
@@ -778,8 +2046,59 @@ html[data-theme='paper'] .btn-delete {
 }
 
 html[data-theme='standard'] .btn-delete {
-  font-family: var(--font-standard), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-weight: 600;
+}
+
+html[data-theme='midnight'] .btn-delete {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 600;
+}
+
+html[data-theme='forest'] .btn-delete {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 600;
+}
+
+html[data-theme='sunset'] .btn-delete {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 600;
+}
+
+html[data-theme='nord'] .btn-delete {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 600;
+}
+
+html[data-theme='slate'] .btn-delete {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 600;
+}
+
+html[data-theme='stone'] .btn-delete {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 600;
+}
+
+html[data-theme='zinc'] .btn-delete {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 600;
+}
+
+html[data-theme='monochrome'] .btn-delete {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 600;
+}
+
+html[data-theme='midnight'] .btn-delete:hover,
+html[data-theme='forest'] .btn-delete:hover,
+html[data-theme='sunset'] .btn-delete:hover,
+html[data-theme='nord'] .btn-delete:hover,
+html[data-theme='slate'] .btn-delete:hover,
+html[data-theme='stone'] .btn-delete:hover,
+html[data-theme='zinc'] .btn-delete:hover,
+html[data-theme='monochrome'] .btn-delete:hover {
+  transform: scale(1.2);
 }
 
 .todo-item:hover .btn-delete {
@@ -808,6 +2127,19 @@ html[data-theme='crt'] .btn-delete:hover {
 
 html[data-theme='crt'] .empty-state {
   font-size: 10px;
+}
+
+html[data-theme='standard'] .empty-state,
+html[data-theme='midnight'] .empty-state,
+html[data-theme='forest'] .empty-state,
+html[data-theme='sunset'] .empty-state,
+html[data-theme='nord'] .empty-state,
+html[data-theme='slate'] .empty-state,
+html[data-theme='stone'] .empty-state,
+html[data-theme='zinc'] .empty-state,
+html[data-theme='monochrome'] .empty-state {
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .empty-state .blink {
@@ -839,7 +2171,15 @@ html[data-theme='crt'] .counter {
 }
 
 html[data-theme='paper'] .counter,
-html[data-theme='standard'] .counter {
+html[data-theme='standard'] .counter,
+html[data-theme='midnight'] .counter,
+html[data-theme='forest'] .counter,
+html[data-theme='sunset'] .counter,
+html[data-theme='nord'] .counter,
+html[data-theme='slate'] .counter,
+html[data-theme='stone'] .counter,
+html[data-theme='zinc'] .counter,
+html[data-theme='monochrome'] .counter {
   text-transform: none;
   letter-spacing: normal;
 }
@@ -860,7 +2200,55 @@ html[data-theme='paper'] .counter span {
 }
 
 html[data-theme='standard'] .counter span {
-  font-family: var(--font-standard), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+html[data-theme='midnight'] .counter span {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+html[data-theme='forest'] .counter span {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+html[data-theme='sunset'] .counter span {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+html[data-theme='nord'] .counter span {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+html[data-theme='slate'] .counter span {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+html[data-theme='stone'] .counter span {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+html[data-theme='zinc'] .counter span {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+html[data-theme='monochrome'] .counter span {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 13px;
   font-weight: 700;
 }
