@@ -1,49 +1,30 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-
-type Category = 'once' | 'daily' | 'weekly' | 'monthly' | 'custom'
-type RecurrenceDays = number[]
-
-interface Todo {
-  id: string
-  text: string
-  done: boolean
-  category: Category
-  dueDate?: string
-  recurrenceDays?: RecurrenceDays
-  completedAt?: string
-  originalId?: string
-}
-
-const CATEGORY_ORDER: Category[] = ['once', 'daily', 'weekly', 'monthly', 'custom']
-const CATEGORY_LABEL: Record<Category, string> = {
-  once: 'One-off',
-  daily: 'Daily',
-  weekly: 'Weekly',
-  monthly: 'Monthly',
-  custom: 'Custom...',
-}
-
-const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-
-type Filter = 'all' | Category
-const FILTER_ORDER: Filter[] = ['all', 'daily', 'weekly', 'monthly', 'custom', 'once']
-const FILTER_LABEL: Record<Filter, string> = {
-  all: 'All',
-  daily: 'Daily',
-  weekly: 'Weekly',
-  monthly: 'Monthly',
-  custom: 'Custom',
-  once: 'One-off',
-}
-
-type Mode = 'personal' | 'work'
-const MODE_ORDER: Mode[] = ['personal', 'work']
-const MODE_LABEL: Record<Mode, string> = {
-  personal: 'Personal',
-  work: 'Work',
-}
+import { useRouter } from 'next/navigation'
+import { 
+  Category, 
+  RecurrenceDays, 
+  Mode, 
+  Todo, 
+  Project, 
+  PhaseStatus,
+  Filter,
+  CATEGORY_ORDER,
+  CATEGORY_LABEL,
+  DAY_LABELS,
+  FILTER_ORDER,
+  FILTER_LABEL,
+  MODE_ORDER,
+  MODE_LABEL,
+  PHASE_STATUS_ORDER,
+  PHASE_STATUS_LABEL,
+} from '@/types'
+import { 
+  loadProjects, 
+  createProjectFromTodo, 
+  getProject 
+} from '@/lib/storage'
 
 function normalizeCategory(value: unknown): Category {
   return CATEGORY_ORDER.includes(value as Category) ? (value as Category) : 'once'
@@ -117,11 +98,13 @@ function saveTodos(mode: Mode, todos: Todo[]) {
 }
 
 export default function Home() {
+  const router = useRouter()
   const [todos, setTodos] = useState<Todo[]>([])
   const [input, setInput] = useState('')
   const [mounted, setMounted] = useState(false)
   const [theme, setTheme] = useState<Theme>('neon')
   const [mode, setMode] = useState<Mode>('personal')
+  const [showSettings, setShowSettings] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
   const [newCategory, setNewCategory] = useState<Category>('once')
@@ -139,7 +122,17 @@ export default function Home() {
 
   useEffect(() => {
     if (mounted) saveTodos(mode, todos)
-  }, [todos, mounted, mode])
+  }, [todos, mounted])
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (showSettings && !(e.target as HTMLElement).closest('.settings-dropdown')) {
+        setShowSettings(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showSettings])
 
   const applyTheme = (next: Theme) => {
     setTheme(next)
@@ -150,6 +143,17 @@ export default function Home() {
   const applyMode = (next: Mode) => {
     setMode(next)
     localStorage.setItem('arcade-mode', next)
+    setTodos(loadTodos(next))
+    setShowSettings(false)
+  }
+
+  const convertToProject = (todo: Todo) => {
+    if (todo.category !== 'once') return
+    const project = createProjectFromTodo(mode, todo)
+    setTodos(prev => prev.map(t => 
+      t.id === todo.id ? { ...t, isProject: true, projectId: project.id } : t
+    ))
+    router.push(`/project/${project.id}`)
   }
 
   const addTodo = () => {
@@ -273,6 +277,187 @@ export default function Home() {
   const totalTasks = todos.length
   const completedTasks = todos.filter(t => t.done).length
 
+  const activeTodos = visibleTodos.filter(t => !t.done)
+  const completedTodos = visibleTodos.filter(t => t.done)
+
+  const renderTodoItem = (todo: Todo) => {
+    const index = todos.findIndex(t => t.id === todo.id)
+    const isOverdueTask = isOverdue(todo.dueDate)
+    const isDueTodayTask = isDueToday(todo.dueDate)
+    return (
+      <div key={todo.id} className={`todo-item ${todo.done ? 'done' : ''} ${isOverdueTask ? 'overdue' : ''} ${isDueTodayTask && !todo.done ? 'due-today' : ''}`}>
+        <div className="todo-main">
+          <button
+            className="todo-check"
+            onClick={() => toggleTodo(todo.id)}
+            aria-label="Toggle todo"
+          >
+            {todo.done ? '✓' : ''}
+          </button>
+          {editingId === todo.id ? (
+            <input
+              className="todo-edit-input"
+              value={editText}
+              onChange={e => setEditText(e.target.value)}
+              onKeyDown={e => handleEditKeyDown(e, todo.id)}
+              onBlur={() => saveEdit(todo.id)}
+              autoFocus
+            />
+          ) : (
+            <span className="todo-text" onDoubleClick={() => startEdit(todo)}>
+              {todo.text}
+            </span>
+          )}
+          <div className="todo-actions">
+            <button
+              className="btn-edit"
+              onClick={() => startEdit(todo)}
+              aria-label="Edit todo"
+            >
+              ✎
+            </button>
+            {todo.category === 'once' && !todo.isProject && (
+              <button
+                className="btn-convert"
+                onClick={() => convertToProject(todo)}
+                aria-label="Convert to project"
+                title="Convert to project"
+              >
+                ↷
+              </button>
+            )}
+            <button
+              className="btn-delete"
+              onClick={() => deleteTodo(todo.id)}
+              aria-label="Delete todo"
+            >
+              X
+            </button>
+          </div>
+        </div>
+        <div className="todo-meta">
+          <select
+            className="select-control priority-select"
+            value={index + 1}
+            onChange={e => setPriority(todo.id, Number(e.target.value))}
+            aria-label={`Priority for "${todo.text}"`}
+          >
+            {todos.map((_, i) => (
+              <option key={i} value={i + 1}>
+                {i + 1}
+              </option>
+            ))}
+          </select>
+          <select
+            className="select-control category-select"
+            data-category={todo.category}
+            value={todo.category}
+            onChange={e => setCategory(todo.id, e.target.value as Category)}
+            aria-label={`Category for "${todo.text}"`}
+          >
+            {CATEGORY_ORDER.map(c => (
+              <option key={c} value={c}>
+                {CATEGORY_LABEL[c]}
+              </option>
+            ))}
+          </select>
+          {todo.dueDate && (
+            <span className={`due-date ${isOverdueTask ? 'overdue' : ''} ${isDueTodayTask && !todo.done ? 'due-today' : ''}`}>
+              {formatDueDate(todo.dueDate)}
+              {todo.recurrenceDays && todo.recurrenceDays.length > 0 && (
+                <span className="recurrence-indicator">
+                  {' '}
+                  {todo.recurrenceDays.map(d => DAY_LABELS[d]).join(', ')}
+                </span>
+              )}
+            </span>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  const renderCompletedItem = (todo: Todo) => {
+    const index = todos.findIndex(t => t.id === todo.id)
+    const isOverdueTask = isOverdue(todo.dueDate)
+    const isDueTodayTask = isDueToday(todo.dueDate)
+    return (
+      <div key={todo.id} className={`todo-item done ${isOverdueTask ? 'overdue' : ''}`}>
+        <div className="todo-main">
+          <button
+            className="todo-check"
+            onClick={() => toggleTodo(todo.id)}
+            aria-label="Toggle todo"
+          >
+            ✓
+          </button>
+          <span className="todo-text" onDoubleClick={() => startEdit(todo)}>
+            {todo.text}
+          </span>
+          <div className="todo-actions">
+            <button
+              className="btn-edit"
+              onClick={() => startEdit(todo)}
+              aria-label="Edit todo"
+            >
+              ✎
+            </button>
+            <button
+              className="btn-delete"
+              onClick={() => deleteTodo(todo.id)}
+              aria-label="Delete todo"
+            >
+              X
+            </button>
+          </div>
+        </div>
+        <div className="todo-meta">
+          <select
+            className="select-control priority-select"
+            value={index + 1}
+            onChange={e => setPriority(todo.id, Number(e.target.value))}
+            aria-label={`Priority for "${todo.text}"`}
+          >
+            {todos.map((_, i) => (
+              <option key={i} value={i + 1}>
+                {i + 1}
+              </option>
+            ))}
+          </select>
+          <select
+            className="select-control category-select"
+            data-category={todo.category}
+            value={todo.category}
+            onChange={e => setCategory(todo.id, e.target.value as Category)}
+            aria-label={`Category for "${todo.text}"`}
+          >
+            {CATEGORY_ORDER.map(c => (
+              <option key={c} value={c}>
+                {CATEGORY_LABEL[c]}
+              </option>
+            ))}
+          </select>
+          {todo.dueDate && (
+            <span className={`due-date ${isOverdueTask ? 'overdue' : ''} ${isDueTodayTask && !todo.done ? 'due-today' : ''}`}>
+              {formatDueDate(todo.dueDate)}
+              {todo.recurrenceDays && todo.recurrenceDays.length > 0 && (
+                <span className="recurrence-indicator">
+                  {' '}
+                  {todo.recurrenceDays.map(d => DAY_LABELS[d]).join(', ')}
+                </span>
+              )}
+            </span>
+          )}
+          {todo.completedAt && (
+            <span className="completed-at">
+              Done: {formatDueDate(todo.completedAt.split('T')[0])}
+            </span>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="container">
       <div className="topbar">
@@ -289,18 +474,51 @@ export default function Home() {
             </button>
           ))}
         </div>
-        <select
-          className="select-control theme-select"
-          value={theme}
-          onChange={e => applyTheme(e.target.value as Theme)}
-          aria-label="Choose theme"
-        >
-          {THEME_ORDER.map(t => (
-            <option key={t} value={t}>
-              {THEME_LABEL[t]}
-            </option>
-          ))}
-        </select>
+        <div className="settings-dropdown">
+          <button 
+            className="settings-btn" 
+            onClick={() => setShowSettings(!showSettings)}
+            aria-label="Settings"
+            aria-expanded={showSettings}
+          >
+            ⚙
+          </button>
+          {showSettings && (
+            <div className="settings-menu">
+              <div className="settings-section">
+                <span className="settings-label">Theme</span>
+                <select
+                  className="select-control theme-select"
+                  value={theme}
+                  onChange={e => applyTheme(e.target.value as Theme)}
+                  aria-label="Choose theme"
+                >
+                  {THEME_ORDER.map(t => (
+                    <option key={t} value={t}>
+                      {THEME_LABEL[t]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="settings-section">
+                <span className="settings-label">Mode</span>
+                <div className="mode-toggle-small" role="radiogroup" aria-label="Select mode">
+                  {MODE_ORDER.map(m => (
+                    <button
+                      key={m}
+                      className={`mode-btn ${mode === m ? 'active' : ''}`}
+                      onClick={() => applyMode(m)}
+                      role="radio"
+                      aria-checked={mode === m}
+                    >
+                      {MODE_LABEL[m]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <h1>To-Do List</h1>
@@ -386,7 +604,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="todo-list">
+<div className="todo-list">
           {!mounted ? null : todos.length === 0 ? (
             <div className="empty-state">
               {isArcade ? (
@@ -403,99 +621,27 @@ export default function Home() {
                 </>
               )}
             </div>
-          ) : visibleTodos.length === 0 ? (
-            <div className="empty-state small">
-              <p>
-                {isArcade ? 'NOTHING HERE' : `No ${FILTER_LABEL[filter].toLowerCase()} tasks`}
-              </p>
-            </div>
           ) : (
-            visibleTodos.map(todo => {
-              const index = todos.findIndex(t => t.id === todo.id)
-              const isOverdueTask = isOverdue(todo.dueDate)
-              const isDueTodayTask = isDueToday(todo.dueDate)
-              return (
-                <div key={todo.id} className={`todo-item ${todo.done ? 'done' : ''} ${isOverdueTask ? 'overdue' : ''} ${isDueTodayTask && !todo.done ? 'due-today' : ''}`}>
-                  <div className="todo-main">
-                    <button
-                      className="todo-check"
-                      onClick={() => toggleTodo(todo.id)}
-                      aria-label="Toggle todo"
-                    >
-                      {todo.done ? '✓' : ''}
-                    </button>
-                    {editingId === todo.id ? (
-                      <input
-                        className="todo-edit-input"
-                        value={editText}
-                        onChange={e => setEditText(e.target.value)}
-                        onKeyDown={e => handleEditKeyDown(e, todo.id)}
-                        onBlur={() => saveEdit(todo.id)}
-                        autoFocus
-                      />
-                    ) : (
-                      <span className="todo-text" onDoubleClick={() => startEdit(todo)}>
-                        {todo.text}
-                      </span>
-                    )}
-                    <div className="todo-actions">
-                      <button
-                        className="btn-edit"
-                        onClick={() => startEdit(todo)}
-                        aria-label="Edit todo"
-                      >
-                        ✎
-                      </button>
-                      <button
-                        className="btn-delete"
-                        onClick={() => deleteTodo(todo.id)}
-                        aria-label="Delete todo"
-                      >
-                        X
-                      </button>
-                    </div>
+            <>
+              {activeTodos.length > 0 && (
+                <div className="todo-section">
+                  <div className="section-header">
+                    <span>{isArcade ? 'ACTIVE MISSIONS' : 'Active'}</span>
+                    <span className="section-count">{activeTodos.length}</span>
                   </div>
-                  <div className="todo-meta">
-                    <select
-                      className="select-control priority-select"
-                      value={index + 1}
-                      onChange={e => setPriority(todo.id, Number(e.target.value))}
-                      aria-label={`Priority for "${todo.text}"`}
-                    >
-                      {todos.map((_, i) => (
-                        <option key={i} value={i + 1}>
-                          {i + 1}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      className="select-control category-select"
-                      data-category={todo.category}
-                      value={todo.category}
-                      onChange={e => setCategory(todo.id, e.target.value as Category)}
-                      aria-label={`Category for "${todo.text}"`}
-                    >
-                      {CATEGORY_ORDER.map(c => (
-                        <option key={c} value={c}>
-                          {CATEGORY_LABEL[c]}
-                        </option>
-                      ))}
-                    </select>
-                    {todo.dueDate && (
-                      <span className={`due-date ${isOverdueTask ? 'overdue' : ''} ${isDueTodayTask && !todo.done ? 'due-today' : ''}`}>
-                        {formatDueDate(todo.dueDate)}
-                        {todo.recurrenceDays && todo.recurrenceDays.length > 0 && (
-                          <span className="recurrence-indicator">
-                            {' '}
-                            {todo.recurrenceDays.map(d => DAY_LABELS[d]).join(', ')}
-                          </span>
-                        )}
-                      </span>
-                    )}
-                  </div>
+                  {activeTodos.map(renderTodoItem)}
                 </div>
-              )
-            })
+              )}
+              {completedTodos.length > 0 && (
+<div className="todo-section completed-section">
+                  <div className="section-header">
+                    <span>{isArcade ? 'COMPLETED MISSIONS' : 'Completed'}</span>
+                    <span className="section-count">{completedTodos.length}</span>
+                  </div>
+                  {completedTodos.map(renderCompletedItem)}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

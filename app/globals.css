@@ -556,6 +556,108 @@ html[data-theme='nord'] .mode-btn {
   letter-spacing: normal;
 }
 
+.settings-dropdown {
+  position: relative;
+}
+
+.settings-btn {
+  background: var(--surface);
+  backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 18px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.settings-btn:hover {
+  border-color: var(--secondary);
+  color: var(--text);
+  background: var(--surface);
+}
+
+.settings-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  background: var(--surface);
+  backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  min-width: 200px;
+  box-shadow: var(--glow-strong);
+  z-index: 100;
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.settings-section {
+  margin-bottom: 1rem;
+}
+
+.settings-section:last-child {
+  margin-bottom: 0;
+}
+
+.settings-label {
+  display: block;
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+html[data-theme='crt'] .settings-label,
+html[data-theme='neon'] .settings-label {
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 10px;
+}
+
+html[data-theme='paper'] .settings-label {
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.mode-toggle-small {
+  display: flex;
+  gap: 0.25rem;
+  background: var(--bg-1);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  padding: 0.25rem;
+}
+
+.mode-toggle-small .mode-btn {
+  padding: 0.4rem 0.75rem;
+  font-size: 11px;
+}
+
+html[data-theme='crt'] .mode-toggle-small .mode-btn,
+html[data-theme='neon'] .mode-toggle-small .mode-btn {
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+
+html[data-theme='paper'] .mode-toggle-small .mode-btn {
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+}
+
 .panel {
   border: 1px solid var(--surface-border);
   border-radius: calc(var(--radius) + 10px);
@@ -2008,32 +2110,89 @@ html[data-theme='monochrome'] .todo-text {
   border: none;
   color: var(--text-dim);
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  opacity: 1;
+  transition: opacity 0.2s, transform 0.15s, color 0.2s, background 0.2s;
+}
+
+.btn-edit:hover {
+  color: var(--primary);
+  background: var(--primary-soft);
+  transform: scale(1.1);
+}
+
+.btn-convert {
+  background: transparent;
+  border: none;
+  color: var(--primary);
+  cursor: pointer;
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
   padding: 0.35rem;
   opacity: 0;
   transition: opacity 0.2s, transform 0.15s, color 0.2s;
 }
 
-.todo-item:hover .btn-edit {
-  opacity: 1;
+html[data-theme='crt'] .btn-convert {
+  font-family: var(--font-retro), 'Press Start 2P', monospace;
+  font-size: 12px;
 }
 
-.btn-edit:hover {
-  color: var(--secondary);
-  transform: scale(1.15);
+html[data-theme='paper'] .btn-convert {
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+}
+
+html[data-theme='standard'] .btn-convert,
+html[data-theme='midnight'] .btn-convert,
+html[data-theme='forest'] .btn-convert,
+html[data-theme='sunset'] .btn-convert,
+html[data-theme='nord'] .btn-convert,
+html[data-theme='slate'] .btn-convert,
+html[data-theme='stone'] .btn-convert,
+html[data-theme='zinc'] .btn-convert,
+html[data-theme='monochrome'] .btn-convert {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-weight: 600;
+}
+
+.btn-convert:hover {
+  color: var(--accent);
+  transform: scale(1.2);
 }
 
 .btn-delete {
   background: transparent;
   border: none;
-  color: var(--danger);
+  color: var(--text-dim);
   cursor: pointer;
-  font-family: var(--font-arcade), 'Orbitron', sans-serif;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 0.35rem;
-  opacity: 0;
-  transition: opacity 0.2s, transform 0.15s;
+  font-size: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  opacity: 1;
+  transition: opacity 0.2s, transform 0.15s, color 0.2s, background 0.2s;
+}
+
+.todo-item:hover .btn-delete {
+  opacity: 1;
+}
+
+.btn-delete:hover {
+  color: var(--danger);
+  background: rgba(255, 95, 109, 0.15);
+  transform: scale(1.1);
 }
 
 html[data-theme='crt'] .btn-delete {
@@ -2045,17 +2204,15 @@ html[data-theme='paper'] .btn-delete {
   font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
 }
 
-html[data-theme='standard'] .btn-delete {
-  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-weight: 600;
-}
-
-html[data-theme='midnight'] .btn-delete {
-  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-weight: 600;
-}
-
-html[data-theme='forest'] .btn-delete {
+html[data-theme='standard'] .btn-delete,
+html[data-theme='midnight'] .btn-delete,
+html[data-theme='forest'] .btn-delete,
+html[data-theme='sunset'] .btn-delete,
+html[data-theme='nord'] .btn-delete,
+html[data-theme='slate'] .btn-delete,
+html[data-theme='stone'] .btn-delete,
+html[data-theme='zinc'] .btn-delete,
+html[data-theme='monochrome'] .btn-delete {
   font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-weight: 600;
 }
@@ -2251,4 +2408,766 @@ html[data-theme='monochrome'] .counter span {
   font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 13px;
   font-weight: 700;
+}
+
+/* ===== PROJECT PAGE STYLES ===== */
+
+.project-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.btn-back {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 0.5rem 0;
+  transition: color 0.2s;
+}
+
+html[data-theme='crt'] .btn-back,
+html[data-theme='neon'] .btn-back {
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+html[data-theme='paper'] .btn-back {
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+}
+
+.btn-back:hover {
+  color: var(--primary);
+}
+
+.project-title-area {
+  flex: 1;
+}
+
+.project-title-area h1 {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0 0 0.5rem 0;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  filter: none;
+  text-shadow: none;
+  letter-spacing: -0.02em;
+  text-transform: none;
+}
+
+html[data-theme='crt'] .project-title-area h1 {
+  font-family: var(--font-retro), 'Press Start 2P', monospace;
+  font-size: 16px;
+}
+
+html[data-theme='neon'] .project-title-area h1 {
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 26px;
+  background: linear-gradient(90deg, var(--primary), var(--accent), var(--secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 18px var(--primary-soft));
+}
+
+html[data-theme='paper'] .project-title-area h1 {
+  font-family: var(--font-paper-heading), 'Playfair Display', Georgia, serif;
+  font-style: italic;
+  border-bottom: 1px solid var(--surface-border);
+  padding-bottom: 0.5rem;
+}
+
+html[data-theme='forest'] .project-title-area h1,
+html[data-theme='sunset'] .project-title-area h1,
+html[data-theme='nord'] .project-title-area h1 {
+  background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 18px var(--primary-soft));
+}
+
+.btn-description {
+  background: transparent;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 0.4rem 0.75rem;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+html[data-theme='crt'] .btn-description,
+html[data-theme='neon'] .btn-description {
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+html[data-theme='paper'] .btn-description {
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+}
+
+.btn-description:hover {
+  border-color: var(--secondary);
+  color: var(--text);
+  background: var(--surface);
+}
+
+.project-timeline {
+  position: relative;
+  padding-left: 2rem;
+}
+
+.project-timeline::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--surface-border);
+}
+
+.phase-card {
+  position: relative;
+  padding-left: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.phase-connector {
+  position: absolute;
+  left: -2rem;
+  top: 0;
+  width: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.connector-line {
+  flex: 1;
+  width: 2px;
+  background: var(--surface-border);
+}
+
+.connector-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 3px solid var(--bg-1);
+  box-shadow: 0 0 0 2px var(--surface-border);
+  z-index: 1;
+}
+
+.phase-content {
+  background: var(--surface);
+  backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.phase-card.drag-over .phase-content {
+  border-color: var(--primary);
+  box-shadow: var(--glow);
+}
+
+.phase-card.dragging .phase-content {
+  opacity: 0.5;
+  border-color: var(--primary);
+  box-shadow: var(--glow);
+}
+
+.phase-header-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.phase-drag-handle {
+  color: var(--text-dim);
+  cursor: grab;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0.25rem;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+}
+
+.phase-drag-handle:hover {
+  opacity: 1;
+  color: var(--text);
+}
+
+.phase-card.dragging .phase-drag-handle {
+  cursor: grabbing;
+  opacity: 1;
+}
+
+.phase-title {
+  flex: 1;
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+html[data-theme='crt'] .phase-title,
+html[data-theme='neon'] .phase-title {
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 14px;
+}
+
+html[data-theme='paper'] .phase-title {
+  font-family: var(--font-paper-heading), 'Playfair Display', Georgia, serif;
+  font-style: italic;
+}
+
+.phase-title:hover {
+  color: var(--primary);
+}
+
+.phase-title-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid var(--primary);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 700;
+  outline: none;
+  padding: 0.25rem 0;
+}
+
+html[data-theme='crt'] .phase-title-input,
+html[data-theme='neon'] .phase-title-input {
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 14px;
+}
+
+html[data-theme='paper'] .phase-title-input {
+  font-family: var(--font-paper-heading), 'Playfair Display', Georgia, serif;
+}
+
+.phase-status {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+html[data-theme='crt'] .phase-status,
+html[data-theme='neon'] .phase-status {
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 10px;
+}
+
+html[data-theme='paper'] .phase-status {
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+}
+
+.phase-due-date {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 0.75rem;
+}
+
+html[data-theme='crt'] .phase-due-date,
+html[data-theme='neon'] .phase-due-date {
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 10px;
+}
+
+html[data-theme='paper'] .phase-due-date {
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+  font-size: 13px;
+}
+
+.phase-description {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+  margin-bottom: 0.75rem;
+}
+
+html[data-theme='crt'] .phase-description,
+html[data-theme='neon'] .phase-description {
+  font-family: var(--font-body), 'Rajdhani', sans-serif;
+  font-size: 13px;
+}
+
+html[data-theme='paper'] .phase-description {
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+  font-size: 15px;
+}
+
+.markdown-desc {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+
+.markdown-desc strong {
+  font-weight: 700;
+}
+
+.markdown-desc em {
+  font-style: italic;
+}
+
+.markdown-desc code {
+  background: var(--surface-border);
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+.markdown-desc br {
+  display: block;
+  content: '';
+  margin-bottom: 0.5rem;
+}
+
+.empty-desc {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.phase-description-edit {
+  margin-bottom: 0.75rem;
+}
+
+.phase-description-edit textarea {
+  width: 100%;
+  background: var(--bg-1);
+  border: 1px solid var(--surface-border);
+  border-radius: calc(var(--radius) - 4px);
+  color: var(--text);
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 0.75rem;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+html[data-theme='crt'] .phase-description-edit textarea {
+  font-family: var(--font-retro), 'Press Start 2P', monospace;
+  font-size: 10px;
+}
+
+html[data-theme='paper'] .phase-description-edit textarea {
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+  font-size: 13px;
+}
+
+.phase-description-edit textarea:focus {
+  border-color: var(--secondary);
+}
+
+.phase-edit-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer;
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+html[data-theme='crt'] .btn-secondary,
+html[data-theme='neon'] .btn-secondary {
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+html[data-theme='paper'] .btn-secondary {
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+}
+
+.btn-secondary:hover {
+  border-color: var(--secondary);
+  background: var(--surface);
+}
+
+.btn-add-description {
+  background: transparent;
+  border: 1px dashed var(--surface-border);
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 0.5rem 0.75rem;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+html[data-theme='crt'] .btn-add-description,
+html[data-theme='neon'] .btn-add-description {
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+
+html[data-theme='paper'] .btn-add-description {
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+}
+
+.btn-add-description:hover {
+  border-color: var(--secondary);
+  color: var(--text);
+}
+
+.phase-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--surface-border);
+}
+
+.btn-status,
+.btn-edit-phase,
+.btn-delete-phase {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  opacity: 1;
+  transition: opacity 0.2s, transform 0.15s, color 0.2s, background 0.2s;
+}
+
+html[data-theme='crt'] .btn-edit-phase,
+html[data-theme='crt'] .btn-delete-phase,
+html[data-theme='neon'] .btn-edit-phase,
+html[data-theme='neon'] .btn-delete-phase {
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 12px;
+}
+
+html[data-theme='paper'] .btn-edit-phase,
+html[data-theme='paper'] .btn-delete-phase {
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+}
+
+.btn-status {
+  color: var(--text-dim);
+  padding: 0.35rem 0.5rem;
+  font-size: 12px;
+  width: auto;
+  height: auto;
+  border-radius: 4px;
+}
+
+.btn-status:hover {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.btn-edit-phase {
+  color: var(--text-dim);
+}
+
+.btn-edit-phase:hover {
+  color: var(--primary);
+  background: var(--primary-soft);
+  transform: scale(1.1);
+}
+
+.btn-delete-phase {
+  color: var(--text-dim);
+  margin-left: auto;
+}
+
+.btn-delete-phase:hover {
+  color: var(--danger);
+  background: rgba(255, 95, 109, 0.15);
+  transform: scale(1.1);
+}
+
+.btn-delete-phase {
+  color: var(--danger);
+  margin-left: auto;
+}
+
+.phase-completed {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--surface-border);
+}
+
+html[data-theme='crt'] .phase-completed,
+html[data-theme='neon'] .phase-completed {
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 9px;
+}
+
+html[data-theme='paper'] .phase-completed {
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+  font-size: 12px;
+}
+
+.empty-phases {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-dim);
+}
+
+.add-phase-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--surface-border);
+}
+
+.add-phase-form input {
+  flex: 1;
+  background: var(--surface);
+  backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  padding: 0.75rem 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+html[data-theme='crt'] .add-phase-form input {
+  font-family: var(--font-retro), 'Press Start 2P', monospace;
+  font-size: 10px;
+}
+
+html[data-theme='paper'] .add-phase-form input {
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+  font-size: 13px;
+}
+
+.add-phase-form input:focus {
+  border-color: var(--secondary);
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal {
+  background: var(--surface);
+  backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--surface-border);
+  border-radius: calc(var(--radius) + 4px);
+  padding: 1.5rem;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: var(--glow-strong);
+}
+
+.modal h2 {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 1rem 0;
+}
+
+html[data-theme='crt'] .modal h2,
+html[data-theme='neon'] .modal h2 {
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 16px;
+}
+
+html[data-theme='paper'] .modal h2 {
+  font-family: var(--font-paper-heading), 'Playfair Display', Georgia, serif;
+  font-style: italic;
+}
+
+.modal textarea {
+  width: 100%;
+  background: var(--bg-1);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  padding: 1rem;
+  resize: vertical;
+  min-height: 200px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+html[data-theme='crt'] .modal textarea {
+  font-family: var(--font-retro), 'Press Start 2P', monospace;
+  font-size: 10px;
+}
+
+html[data-theme='paper'] .modal textarea {
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+  font-size: 13px;
+}
+
+.modal textarea:focus {
+  border-color: var(--secondary);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.todo-section {
+  margin-bottom: 1.5rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.section-header span:first-child {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+html[data-theme='crt'] .section-header span:first-child,
+html[data-theme='neon'] .section-header span:first-child {
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 10px;
+}
+
+html[data-theme='paper'] .section-header span:first-child {
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.section-count {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--primary-soft);
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
+html[data-theme='crt'] .section-count,
+html[data-theme='neon'] .section-count {
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 11px;
+}
+
+html[data-theme='paper'] .section-count {
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+}
+
+.completed-section {
+  opacity: 0.7;
+}
+
+.completed-section .section-header span:first-child {
+  color: var(--secondary);
+}
+
+.completed-section .section-count {
+  background: var(--secondary-soft);
+  color: var(--secondary);
+}
+
+.completed-section .todo-item {
+  opacity: 0.6;
+}
+
+.completed-section .todo-item:hover {
+  opacity: 0.8;
+}
+
+.completed-at {
+  font-family: var(--font-sharp), 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 11px;
+  color: var(--secondary);
+  font-weight: 500;
+}
+
+html[data-theme='crt'] .completed-at,
+html[data-theme='neon'] .completed-at {
+  font-family: var(--font-arcade), 'Orbitron', sans-serif;
+  font-size: 9px;
+}
+
+html[data-theme='paper'] .completed-at {
+  font-family: var(--font-paper), 'EB Garamond', Georgia, serif;
+  font-size: 12px;
 }
