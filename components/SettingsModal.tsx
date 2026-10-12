@@ -4,15 +4,17 @@ import { ReactNode, useRef, useState } from 'react'
 import { CATEGORY_LABEL, CATEGORY_ORDER, Category, Mode, MODE_LABEL } from '@/types'
 import { Settings, ThemeChoice } from '@/lib/settings'
 import { THEMES } from '@/lib/themes'
-import { loadTodos, saveTodos } from '@/lib/todos'
+import { loadTodos, markDeleted, saveTodos } from '@/lib/todos'
 import Icon, { IconName } from '@/components/Icon'
 import { ConfirmDialog, Kbd, Modal, Segmented, Switch } from '@/components/ui'
+import SyncSettings from '@/components/SyncSettings'
 
-export type SettingsTab = 'appearance' | 'tasks' | 'data' | 'shortcuts' | 'about'
+export type SettingsTab = 'appearance' | 'tasks' | 'sync' | 'data' | 'shortcuts' | 'about'
 
 const TABS: { id: SettingsTab; label: string; icon: IconName }[] = [
   { id: 'appearance', label: 'Appearance', icon: 'palette' },
   { id: 'tasks', label: 'Tasks', icon: 'listChecks' },
+  { id: 'sync', label: 'Sync', icon: 'cloud' },
   { id: 'data', label: 'Data', icon: 'database' },
   { id: 'shortcuts', label: 'Shortcuts', icon: 'keyboard' },
   { id: 'about', label: 'About', icon: 'info' },
@@ -88,7 +90,9 @@ export default function SettingsModal({ initialTab = 'appearance', settings, onC
 
   const runConfirm = () => {
     if (confirm === 'clear') {
-      saveTodos(mode, loadTodos(mode).filter(t => !t.done))
+      const all = loadTodos(mode)
+      markDeleted(mode, all.filter(t => t.done))
+      saveTodos(mode, all.filter(t => !t.done))
       onDataChanged()
       flash('Completed tasks cleared')
     } else if (confirm === 'reset') {
@@ -230,6 +234,8 @@ export default function SettingsModal({ initialTab = 'appearance', settings, onC
               </Row>
             </Section>
           )}
+
+          {tab === 'sync' && <SyncSettings onDataChanged={onDataChanged} />}
 
           {tab === 'data' && (
             <Section title="Data" subtitle="Everything is stored locally in this browser.">

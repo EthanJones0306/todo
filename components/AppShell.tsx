@@ -7,6 +7,10 @@ import { useSettings } from '@/lib/settings'
 import Sidebar, { SidebarProject, View } from '@/components/Sidebar'
 import SettingsModal, { SettingsTab } from '@/components/SettingsModal'
 import Icon from '@/components/Icon'
+import { LOCAL_CHANGE_EVENT, DATA_CHANGE_EVENT } from '@/lib/todos'
+import { getMsConfig, getMsal } from '@/lib/sync/msal'
+import { loadLinks, requestSync, STATUS_EVENT } from '@/lib/sync/engine'
+import { formatAgo, useSyncStatus } from '@/lib/sync/useSync'
 
 interface Props {
   mode: Mode
@@ -46,6 +50,48 @@ export default function AppShell({
   const [projectsVersion, setProjectsVersion] = useState(0)
 
   const [projects, setProjects] = useState<SidebarProject[]>([])
+  const [linked, setLinked] = useState(false)
+  const syncStatus = useSyncStatus()
+
+  // Background sync: on load, shortly after local edits, on focus and every minute.
+  useEffect(() => {
+    if (!getMsConfig()) return
+    getMsal()
+      ?.then(() => requestSync())
+      .catch(() => {})
+    let debounce: ReturnType<typeof setTimeout>
+    const soon = () => {
+      clearTimeout(debounce)
+      debounce = setTimeout(requestSync, 1200)
+    }
+    const now = () => requestSync()
+    const tick = setInterval(() => {
+      if (document.visibilityState === 'visible') requestSync()
+    }, 60000)
+    window.addEventListener(LOCAL_CHANGE_EVENT, soon)
+    window.addEventListener('focus', now)
+    window.addEventListener('online', now)
+    return () => {
+      clearTimeout(debounce)
+      clearInterval(tick)
+      window.removeEventListener(LOCAL_CHANGE_EVENT, soon)
+      window.removeEventListener('focus', now)
+      window.removeEventListener('online', now)
+    }
+  }, [])
+
+  useEffect(() => {
+    const update = () => setLinked(!!loadLinks()[mode])
+    update()
+    window.addEventListener(STATUS_EVENT, update)
+    return () => window.removeEventListener(STATUS_EVENT, update)
+  }, [mode])
+
+  useEffect(() => {
+    const bump = () => setProjectsVersion(v => v + 1)
+    window.addEventListener(DATA_CHANGE_EVENT, bump)
+    return () => window.removeEventListener(DATA_CHANGE_EVENT, bump)
+  }, [])
 
   useEffect(() => {
     setProjects(
@@ -112,6 +158,29 @@ export default function AppShell({
           </button>
           <span className="topbar-title">{topbarTitle}</span>
           <div className="topbar-spacer" />
+          {linked && (
+            <button
+              className={`sync-pill is-${syncStatus.phase}`}
+              onClick={() => (syncStatus.phase === 'signed-out' || syncStatus.phase === 'error' ? setSettingsTab('sync') : requestSync())}
+              title={syncStatus.error ?? `Last synced ${formatAgo(syncStatus.lastSync ?? loadLinks()[mode]?.lastSync)} — click to sync now`}
+            >
+              <Icon
+                name={syncStatus.phase === 'syncing' ? 'refresh' : syncStatus.phase === 'idle' ? 'cloud' : 'cloudOff'}
+                size={14}
+              />
+              <span>
+                {syncStatus.phase === 'syncing'
+                  ? 'Syncing'
+                  : syncStatus.phase === 'idle'
+                  ? 'Synced'
+                  : syncStatus.phase === 'offline'
+                  ? 'Offline'
+                  : syncStatus.phase === 'signed-out'
+                  ? 'Sign in'
+                  : 'Sync error'}
+              </span>
+            </button>
+          )}
           <button className="icon-btn" onClick={() => setSettingsTab('appearance')} aria-label="Settings" title="Settings ( , )">
             <Icon name="settings" />
           </button>

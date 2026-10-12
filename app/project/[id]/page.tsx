@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { Mode, Phase, PhaseStatus, Project, PHASE_STATUS_LABEL, PHASE_STATUS_ORDER } from '@/types'
 import { addPhase, deletePhase, deleteProject, getProject, reorderPhases, updatePhase, updateProject } from '@/lib/storage'
-import { loadMode, loadTodos, saveMode, saveTodos, shouldShowToday } from '@/lib/todos'
+import { DATA_CHANGE_EVENT, loadMode, loadTodos, saveMode, saveTodos, shouldShowToday } from '@/lib/todos'
+import { queueProjectRemoval } from '@/lib/sync/engine'
 import { addDays, formatRelativeDate, getTodayString, isOverdue } from '@/lib/date'
 import AppShell from '@/components/AppShell'
 import { ALL_VIEWS, View } from '@/components/Sidebar'
@@ -60,6 +61,12 @@ export default function ProjectPage() {
   }, [projectId])
 
   const refresh = () => setProject(getProject(mode, projectId) ?? null)
+
+  useEffect(() => {
+    const reload = () => setProject(getProject(mode, projectId) ?? null)
+    window.addEventListener(DATA_CHANGE_EVENT, reload)
+    return () => window.removeEventListener(DATA_CHANGE_EVENT, reload)
+  }, [mode, projectId])
 
   const counts = useMemo(() => {
     const todos = mounted ? loadTodos(mode) : []
@@ -186,6 +193,8 @@ export default function ProjectPage() {
   }
 
   const handleDeleteProject = () => {
+    // Remove the steps from To Do too, or the next sync would bring the project back.
+    queueProjectRemoval(mode, project, loadTodos(mode).find(t => t.id === project.sourceTodoId))
     deleteProject(mode, projectId)
     saveTodos(
       mode,

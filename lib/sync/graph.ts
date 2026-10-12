@@ -1,0 +1,132 @@
+const BASE = 'https://graph.microsoft.com/v1.0'
+
+export class GraphError extends Error {
+  constructor(public status: number, message: string) {
+    super(message)
+  }
+}
+
+export interface GraphDateTime {
+  dateTime: string
+  timeZone: string
+}
+
+export interface GraphRecurrence {
+  pattern: {
+    type: 'daily' | 'weekly' | 'absoluteMonthly' | 'relativeMonthly' | 'absoluteYearly' | 'relativeYearly'
+    interval: number
+    daysOfWeek?: string[]
+    dayOfMonth?: number
+    firstDayOfWeek?: string
+  }
+  range: { type: 'noEnd' | 'endDate' | 'numbered'; startDate: string }
+}
+
+export interface GraphChecklistItem {
+  id: string
+  displayName: string
+  isChecked: boolean
+}
+
+export interface GraphTask {
+  id: string
+  title: string
+  status: 'notStarted' | 'inProgress' | 'completed' | 'waitingOnOthers' | 'deferred'
+  body?: { content: string; contentType: 'text' | 'html' }
+  dueDateTime?: GraphDateTime | null
+  completedDateTime?: GraphDateTime | null
+  recurrence?: GraphRecurrence | null
+  lastModifiedDateTime: string
+  checklistItems?: GraphChecklistItem[]
+}
+
+export interface GraphList {
+  id: string
+  displayName: string
+  wellknownListName?: string
+}
+
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
+
+async function graph<T>(token: string, path: string, init: RequestInit = {}): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(path.startsWith('http') ? path : BASE + path, {
+      ...init,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Prefer: 'outlook.timezone="UTC"',
+        ...(init.headers ?? {}),
+      },
+    })
+    if ((res.status === 429 || res.status === 503 || res.status === 504) && attempt < 3) {
+      const wait = Number(res.headers.get('Retry-After')) || 2 ** attempt
+      await sleep(wait * 1000)
+      continue
+    }
+    if (!res.ok) {
+      let message = `${res.status} ${res.statusText}`
+      try {
+        const body = await res.json()
+        message = body?.error?.message || message
+      } catch {}
+      throw new GraphError(res.status, message)
+    }
+    if (res.status === 204) return undefined as T
+    return res.json()
+  }
+}
+
+async function getAll<T>(token: string, path: string): Promise<T[]> {
+  const items: T[] = []
+  let next: string | undefined = path
+  while (next) {
+    const page: { value: T[]; '@odata.nextLink'?: string } = await graph(token, next)
+    items.push(...page.value)
+    next = page['@odata.nextLink']
+  }
+  return items
+}
+
+export const listLists = (token: string) => getAll<GraphList>(token, '/me/todo/lists')
+
+export const createList = (token: string, displayName: string) =>
+  graph<GraphList>(token, '/me/todo/lists', { method: 'POST', body: JSON.stringify({ displayName }) })
+
+export async function listTasks(token: string, listId: string): Promise<GraphTask[]> {
+  const base = `/me/todo/lists/${listId}/tasks?$top=100`
+  try {
+    return await getAll<GraphTask>(token, `${base}&$expand=checklistItems`)
+  } catch (e) {
+    if (e instanceof GraphError && e.status === 400) return getAll<GraphTask>(token, base)
+    throw e
+  }
+}
+
+const taskPath = (listId: string, taskId?: string) => `/me/todo/lists/${listId}/tasks${taskId ? `/${taskId}` : ''}`
+
+export const createTask = (token: string, listId: string, task: Partial<GraphTask>) =>
+  graph<GraphTask>(token, taskPath(listId), { method: 'POST', body: JSON.stringify(task) })
+
+export const updateTask = (token: string, listId: string, taskId: string, patch: Partial<GraphTask>) =>
+  graph<GraphTask>(token, taskPath(listId, taskId), { method: 'PATCH', body: JSON.stringify(patch) })
+
+export const deleteTask = (token: string, listId: string, taskId: string) =>
+  graph<void>(token, taskPath(listId, taskId), { method: 'DELETE' })
+
+const itemPath = (listId: string, taskId: string, itemId?: string) =>
+  `${taskPath(listId, taskId)}/checklistItems${itemId ? `/${itemId}` : ''}`
+
+export const createChecklistItem = (token: string, listId: string, taskId: string, item: Partial<GraphChecklistItem>) =>
+  graph<GraphChecklistItem>(token, itemPath(listId, taskId), { method: 'POST', body: JSON.stringify(item) })
+
+export const updateChecklistItem = (
+  token: string,
+  listId: string,
+  taskId: string,
+  itemId: string,
+  patch: Partial<GraphChecklistItem>
+) => graph<GraphChecklistItem>(token, itemPath(listId, taskId, itemId), { method: 'PATCH', body: JSON.stringify(patch) })
+
+export const deleteChecklistItem = (token: string, listId: string, taskId: string, itemId: string) =>
+  graph<void>(token, itemPath(listId, taskId, itemId), { method: 'DELETE' })

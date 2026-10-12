@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Category, CATEGORY_LABEL, CATEGORY_ORDER, DAY_LABELS, Mode, RecurrenceDays, Todo } from '@/types'
 import { createProjectFromTodo, loadProjects } from '@/lib/storage'
-import { loadMode, loadTodos, saveMode, saveTodos, shouldShowToday, getNextDueDate } from '@/lib/todos'
+import { DATA_CHANGE_EVENT, loadMode, loadTodos, markDeleted, saveMode, saveTodos, shouldShowToday, getNextDueDate } from '@/lib/todos'
 import { addDays, formatLongToday, formatRelativeDate, getTodayString, greeting, isDueToday, isOverdue } from '@/lib/date'
 import { Settings, useSettings } from '@/lib/settings'
 import AppShell, { isTypingTarget } from '@/components/AppShell'
@@ -72,6 +72,15 @@ export default function Home() {
     if (mounted) saveTodos(mode, todos)
   }, [todos, mode, mounted])
 
+  // Pick up changes pulled from Microsoft To Do.
+  const modeRef = useRef(mode)
+  modeRef.current = mode
+  useEffect(() => {
+    const reload = () => setTodos(loadTodos(modeRef.current))
+    window.addEventListener(DATA_CHANGE_EVENT, reload)
+    return () => window.removeEventListener(DATA_CHANGE_EVENT, reload)
+  }, [])
+
   useEffect(() => {
     setNewCategory(settings.defaultCategory)
   }, [settings.defaultCategory])
@@ -126,7 +135,8 @@ export default function Home() {
       if (!todo) return prev
       const newDone = !todo.done
       const now = new Date().toISOString()
-      if (newDone && todo.category !== 'once' && todo.recurrenceDays && todo.recurrenceDays.length > 0) {
+      // Synced tasks are rolled forward by Microsoft To Do itself; the next one arrives on the next sync.
+      if (newDone && !todo.remoteId && todo.category !== 'once' && todo.recurrenceDays && todo.recurrenceDays.length > 0) {
         const nextTodo: Todo = {
           ...todo,
           id: crypto.randomUUID(),
@@ -147,6 +157,7 @@ export default function Home() {
 
   const performDelete = (todo: Todo) => {
     const index = todos.findIndex(t => t.id === todo.id)
+    markDeleted(mode, [todo])
     setTodos(prev => prev.filter(t => t.id !== todo.id))
     showToast('Task deleted', () =>
       setTodos(prev => {
@@ -163,7 +174,17 @@ export default function Home() {
   }
 
   const duplicateTodo = (todo: Todo) => {
-    const copy: Todo = { ...todo, id: crypto.randomUUID(), done: false, completedAt: undefined, isProject: false, projectId: undefined }
+    const copy: Todo = {
+      ...todo,
+      id: crypto.randomUUID(),
+      done: false,
+      completedAt: undefined,
+      isProject: false,
+      projectId: undefined,
+      remoteId: undefined,
+      remoteModified: undefined,
+      dirty: undefined,
+    }
     setTodos(prev => {
       const i = prev.findIndex(t => t.id === todo.id)
       const next = [...prev]
@@ -215,6 +236,7 @@ export default function Home() {
     const removed = todos.filter(t => t.done && matchesView(t, view))
     const ids = new Set(removed.map(t => t.id))
     const before = todos
+    markDeleted(mode, removed)
     setTodos(prev => prev.filter(t => !ids.has(t.id)))
     showToast(`Cleared ${removed.length} completed`, () => setTodos(before))
   }

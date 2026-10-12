@@ -2037,6 +2037,109 @@ html[data-theme='crt'] .switch-thumb {
   max-width: 480px;
 }
 
+/* ---------- Sync ---------- */
+.sync-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-3);
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.sync-pill:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.sync-pill.is-idle .icon {
+  color: var(--success);
+}
+.sync-pill.is-syncing .icon {
+  animation: spin 900ms linear infinite;
+}
+.sync-pill.is-error,
+.sync-pill.is-signed-out {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.sync-setup .settings-row-hint {
+  margin-bottom: 10px;
+}
+.copy-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 6px 6px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+.copy-field code {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+.sync-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.sync-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 550;
+  color: var(--text-2);
+}
+.sync-fields .field {
+  min-width: 0;
+  width: 100%;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+}
+.sync-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+.sync-error .icon {
+  margin-top: 2px;
+}
+@media (max-width: 860px) {
+  .sync-fields {
+    grid-template-columns: 1fr;
+  }
+  .sync-pill span {
+    display: none;
+  }
+}
+
+.redirect-page {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  color: var(--text-3);
+}
+
 /* ---------- Toast ---------- */
 .toast {
   position: fixed;

@@ -16,6 +16,12 @@ export interface Todo {
   originalId?: string
   isProject?: boolean
   projectId?: string
+  /** Microsoft To Do task id when this workspace is synced */
+  remoteId?: string
+  /** lastModifiedDateTime of the remote task when we last synced it */
+  remoteModified?: string
+  /** Local changes not yet pushed to Microsoft To Do */
+  dirty?: boolean
 }
 
 export interface Phase {
@@ -29,6 +35,8 @@ export interface Phase {
   completedAt?: string
   createdAt: string
   updatedAt: string
+  /** Microsoft To Do checklist item id */
+  remoteId?: string
 }
 
 export interface Project {
@@ -40,6 +48,10 @@ export interface Project {
   createdAt: string
   updatedAt: string
   mode: Mode
+  /** Local changes not yet pushed to Microsoft To Do */
+  dirty?: boolean
+  /** Checklist item ids seen on the remote task, so we only delete steps we know about */
+  knownChecklistIds?: string[]
 }
 
 export const CATEGORY_ORDER: Category[] = ['once', 'daily', 'weekly', 'monthly', 'custom']
