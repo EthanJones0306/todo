@@ -71,6 +71,35 @@ export function setLink(mode: Mode, link: ListLink | null): void {
   setStatus({ ...status, lastSync: undefined, error: undefined })
 }
 
+/** True if a linked workspace has edits that haven't reached To Do yet. */
+export function hasPendingChanges(): boolean {
+  const links = loadLinks()
+  return MODE_ORDER.some(
+    mode =>
+      links[mode] &&
+      (loadTodos(mode).some(t => !t.remoteId || t.dirty) ||
+        loadProjects(mode).some(p => p.dirty) ||
+        loadDeleted(mode).length > 0 ||
+        loadDeletedSteps(mode).length > 0)
+  )
+}
+
+/**
+ * Remove every synced workspace's tasks and projects from this device. They stay safe in
+ * Microsoft To Do and come back after signing in again — work data shouldn't linger locally.
+ */
+export function forgetSyncedData(): void {
+  const links = loadLinks()
+  for (const mode of MODE_ORDER) {
+    if (!links[mode]) continue
+    saveTodosRaw(mode, [])
+    saveProjectsRaw(mode, [])
+    saveDeleted(mode, [])
+    localStorage.removeItem(DELETED_STEPS_KEY(mode))
+  }
+  window.dispatchEvent(new Event(DATA_CHANGE_EVENT))
+}
+
 /* ---------- Status ---------- */
 
 export type SyncPhase = 'unconfigured' | 'signed-out' | 'idle' | 'syncing' | 'error' | 'offline'

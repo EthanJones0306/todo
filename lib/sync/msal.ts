@@ -5,8 +5,11 @@ import type { AccountInfo, PublicClientApplication } from '@azure/msal-browser'
 // Loaded on demand so people who never turn on sync don't download it.
 const loadMsal = () => import('@azure/msal-browser')
 
-export const SCOPES = ['Tasks.ReadWrite', 'User.Read']
+// Least privilege: only To Do access. Sign-in itself adds openid/profile automatically.
+export const SCOPES = ['Tasks.ReadWrite']
 const CONFIG_KEY = 'arcade-ms-config'
+// Remembers only *that* this device was connected (no account details), so we can try a silent sign-in.
+const CONNECTED_KEY = 'arcade-ms-connected'
 
 export interface MsConfig {
   clientId: string
@@ -59,12 +62,21 @@ export function getMsal(): Promise<PublicClientApplication> | null {
           redirectUri: redirectUri(),
           postLogoutRedirectUri: `${window.location.origin}/`,
         },
-        cache: { cacheLocation: 'localStorage' },
+        // Work tokens live only for this browser session, never in persistent storage.
+        cache: { cacheLocation: 'sessionStorage' },
       })
       await pca.initialize()
       const result = await pca.handleRedirectPromise()
       if (result?.account) pca.setActiveAccount(result.account)
       else if (!pca.getActiveAccount() && pca.getAllAccounts()[0]) pca.setActiveAccount(pca.getAllAccounts()[0])
+      if (pca.getActiveAccount()) localStorage.setItem(CONNECTED_KEY, '1')
+      else if (localStorage.getItem(CONNECTED_KEY)) {
+        // New browser session: reuse the existing Microsoft sign-in without prompting, if the browser allows it.
+        try {
+          const silent = await pca.ssoSilent({ scopes: SCOPES })
+          pca.setActiveAccount(silent.account)
+        } catch {}
+      }
       return pca
     })()
   }
@@ -84,6 +96,7 @@ export async function signIn(): Promise<void> {
 export async function signOut(): Promise<void> {
   const pca = await getMsal()
   if (!pca) return
+  localStorage.removeItem(CONNECTED_KEY)
   await pca.logoutRedirect({ account: pca.getActiveAccount() ?? undefined })
 }
 

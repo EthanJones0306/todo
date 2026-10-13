@@ -4,3 +4,6 @@ out/
 .env*.local
 *.tsbuildinfo
 .DS_Store
+# Environment files (Microsoft tenant/app IDs and anything else) never go in git
+.env
+.env.*

@@ -33,6 +33,8 @@ const SHORTCUTS: { keys: string[]; label: string }[] = [
 ]
 
 const STORAGE_PREFIX = 'arcade-'
+// Microsoft app/tenant details and sign-in state stay on this device, never in a backup file.
+const EXCLUDED_FROM_BACKUP = new Set(['arcade-ms-config', 'arcade-ms-connected'])
 
 interface Props {
   initialTab?: SettingsTab
@@ -59,7 +61,7 @@ export default function SettingsModal({ initialTab = 'appearance', settings, onC
     const data: Record<string, string> = {}
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i)
-      if (key?.startsWith(STORAGE_PREFIX)) data[key] = localStorage.getItem(key) ?? ''
+      if (key?.startsWith(STORAGE_PREFIX) && !EXCLUDED_FROM_BACKUP.has(key)) data[key] = localStorage.getItem(key) ?? ''
     }
     const blob = new Blob([JSON.stringify({ app: 'arcade-todo', version: 1, exportedAt: new Date().toISOString(), data }, null, 2)], {
       type: 'application/json',
@@ -78,7 +80,9 @@ export default function SettingsModal({ initialTab = 'appearance', settings, onC
       const parsed = JSON.parse(await file.text())
       const data = parsed?.data
       if (!data || typeof data !== 'object') throw new Error()
-      const entries = Object.entries(data).filter(([k, v]) => k.startsWith(STORAGE_PREFIX) && typeof v === 'string')
+      const entries = Object.entries(data).filter(
+        ([k, v]) => k.startsWith(STORAGE_PREFIX) && !EXCLUDED_FROM_BACKUP.has(k) && typeof v === 'string'
+      )
       if (entries.length === 0) throw new Error()
       setConfirm({ importData: Object.fromEntries(entries) as Record<string, string> })
     } catch {
@@ -100,7 +104,9 @@ export default function SettingsModal({ initialTab = 'appearance', settings, onC
       window.location.href = '/'
       return
     } else if (confirm && 'importData' in confirm) {
-      Object.keys(localStorage).filter(k => k.startsWith(STORAGE_PREFIX)).forEach(k => localStorage.removeItem(k))
+      Object.keys(localStorage)
+        .filter(k => k.startsWith(STORAGE_PREFIX) && !EXCLUDED_FROM_BACKUP.has(k))
+        .forEach(k => localStorage.removeItem(k))
       Object.entries(confirm.importData).forEach(([k, v]) => localStorage.setItem(k, v))
       window.location.href = '/'
       return

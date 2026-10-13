@@ -5,7 +5,7 @@ import type { AccountInfo } from '@azure/msal-browser'
 import { Mode, MODE_LABEL, MODE_ORDER } from '@/types'
 import { getAccount, getMsConfig, getToken, MsConfig, redirectUri as getRedirectUri, saveMsConfig, signIn, signOut } from '@/lib/sync/msal'
 import { createList, GraphList, listLists } from '@/lib/sync/graph'
-import { loadLinks, requestSync, setLink, STATUS_EVENT } from '@/lib/sync/engine'
+import { forgetSyncedData, hasPendingChanges, loadLinks, requestSync, setLink, STATUS_EVENT } from '@/lib/sync/engine'
 import { formatAgo, useSyncStatus } from '@/lib/sync/useSync'
 import Icon from '@/components/Icon'
 
@@ -21,6 +21,7 @@ export default function SyncSettings({ onDataChanged }: { onDataChanged: () => v
   const [busy, setBusy] = useState<Mode | 'signin' | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [confirmDiscard, setConfirmDiscard] = useState(false)
   const status = useSyncStatus()
   const redirectUri = typeof window === 'undefined' ? '' : getRedirectUri()
 
@@ -64,6 +65,21 @@ export default function SyncSettings({ onDataChanged }: { onDataChanged: () => v
     saveMsConfig(clientId, tenantId)
     setError(null)
     setCfg(getMsConfig())
+  }
+
+  const handleSignOut = async () => {
+    setError(null)
+    setBusy('signin')
+    await requestSync()
+    if (hasPendingChanges() && !confirmDiscard) {
+      setConfirmDiscard(true)
+      setError('Some changes haven’t uploaded to To Do yet. Sign out again to discard them, or fix the sync error first.')
+      setBusy(null)
+      return
+    }
+    forgetSyncedData()
+    onDataChanged()
+    await signOut()
   }
 
   const changeLink = async (mode: Mode, value: string) => {
@@ -143,11 +159,14 @@ export default function SyncSettings({ onDataChanged }: { onDataChanged: () => v
             <div className="settings-row-hint">
               {account === undefined ? 'Checking…' : account ? `${account.name ?? ''} · ${account.username}` : 'Not connected'}
             </div>
+            {account && (
+              <div className="settings-row-hint">Signing out removes synced tasks from this device. They stay in To Do.</div>
+            )}
           </div>
           <div className="settings-row-control">
             {account ? (
-              <button className="btn btn-ghost btn-sm" onClick={() => signOut()}>
-                Sign out
+              <button className="btn btn-ghost btn-sm" disabled={busy !== null} onClick={handleSignOut}>
+                {busy === 'signin' ? 'Signing out…' : confirmDiscard ? 'Sign out anyway' : 'Sign out'}
               </button>
             ) : (
               <button
