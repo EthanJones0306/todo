@@ -34,9 +34,9 @@ export const LOCAL_CHANGE_EVENT = 'arcade-local-change'
 export const DATA_CHANGE_EVENT = 'arcade-data-change'
 const DELETED_KEY = (mode: Mode) => `arcade-sync-deleted-${mode}`
 
-/** The fields that round-trip to Microsoft To Do; a change to any of them needs pushing. */
+/** The fields sent to Microsoft To Do (name and done); a change to either needs pushing. */
 function syncKey(t: Todo): string {
-  return JSON.stringify([t.text, t.done, t.dueDate ?? null, t.category, t.recurrenceDays ?? null])
+  return JSON.stringify([t.text, t.done])
 }
 
 /**

@@ -11,33 +11,13 @@ export interface GraphDateTime {
   timeZone: string
 }
 
-export interface GraphRecurrence {
-  pattern: {
-    type: 'daily' | 'weekly' | 'absoluteMonthly' | 'relativeMonthly' | 'absoluteYearly' | 'relativeYearly'
-    interval: number
-    daysOfWeek?: string[]
-    dayOfMonth?: number
-    firstDayOfWeek?: string
-  }
-  range: { type: 'noEnd' | 'endDate' | 'numbered'; startDate: string }
-}
-
-export interface GraphChecklistItem {
-  id: string
-  displayName: string
-  isChecked: boolean
-}
-
 export interface GraphTask {
   id: string
   title: string
   status: 'notStarted' | 'inProgress' | 'completed' | 'waitingOnOthers' | 'deferred'
-  body?: { content: string; contentType: 'text' | 'html' }
   dueDateTime?: GraphDateTime | null
   completedDateTime?: GraphDateTime | null
-  recurrence?: GraphRecurrence | null
   lastModifiedDateTime: string
-  checklistItems?: GraphChecklistItem[]
 }
 
 export interface GraphList {
@@ -93,15 +73,8 @@ export const listLists = (token: string) => getAll<GraphList>(token, '/me/todo/l
 export const createList = (token: string, displayName: string) =>
   graph<GraphList>(token, '/me/todo/lists', { method: 'POST', body: JSON.stringify({ displayName }) })
 
-export async function listTasks(token: string, listId: string): Promise<GraphTask[]> {
-  const base = `/me/todo/lists/${listId}/tasks?$top=100`
-  try {
-    return await getAll<GraphTask>(token, `${base}&$expand=checklistItems`)
-  } catch (e) {
-    if (e instanceof GraphError && e.status === 400) return getAll<GraphTask>(token, base)
-    throw e
-  }
-}
+export const listTasks = (token: string, listId: string) =>
+  getAll<GraphTask>(token, `/me/todo/lists/${listId}/tasks?$top=100`)
 
 const taskPath = (listId: string, taskId?: string) => `/me/todo/lists/${listId}/tasks${taskId ? `/${taskId}` : ''}`
 
@@ -113,20 +86,3 @@ export const updateTask = (token: string, listId: string, taskId: string, patch:
 
 export const deleteTask = (token: string, listId: string, taskId: string) =>
   graph<void>(token, taskPath(listId, taskId), { method: 'DELETE' })
-
-const itemPath = (listId: string, taskId: string, itemId?: string) =>
-  `${taskPath(listId, taskId)}/checklistItems${itemId ? `/${itemId}` : ''}`
-
-export const createChecklistItem = (token: string, listId: string, taskId: string, item: Partial<GraphChecklistItem>) =>
-  graph<GraphChecklistItem>(token, itemPath(listId, taskId), { method: 'POST', body: JSON.stringify(item) })
-
-export const updateChecklistItem = (
-  token: string,
-  listId: string,
-  taskId: string,
-  itemId: string,
-  patch: Partial<GraphChecklistItem>
-) => graph<GraphChecklistItem>(token, itemPath(listId, taskId, itemId), { method: 'PATCH', body: JSON.stringify(patch) })
-
-export const deleteChecklistItem = (token: string, listId: string, taskId: string, itemId: string) =>
-  graph<void>(token, itemPath(listId, taskId, itemId), { method: 'DELETE' })

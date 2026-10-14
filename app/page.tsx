@@ -135,8 +135,7 @@ export default function Home() {
       if (!todo) return prev
       const newDone = !todo.done
       const now = new Date().toISOString()
-      // Synced tasks are rolled forward by Microsoft To Do itself; the next one arrives on the next sync.
-      if (newDone && !todo.remoteId && todo.category !== 'once' && todo.recurrenceDays && todo.recurrenceDays.length > 0) {
+      if (newDone && todo.category !== 'once' && todo.recurrenceDays && todo.recurrenceDays.length > 0) {
         const nextTodo: Todo = {
           ...todo,
           id: crypto.randomUUID(),

@@ -114,7 +114,10 @@ export default function SyncSettings({ onDataChanged }: { onDataChanged: () => v
     <section className="settings-section">
       <header className="settings-section-head">
         <h3>Sync</h3>
-        <p>Keep a workspace in step with a Microsoft To Do list, so your tasks are saved online and follow you to any device.</p>
+        <p>
+          Send a workspace’s tasks to a Microsoft To Do list. To Do gets each task’s name and whether it’s done; due
+          dates, repeats, order and projects stay here.
+        </p>
       </header>
 
       {!cfg?.fromEnv && (
@@ -205,7 +208,7 @@ export default function SyncSettings({ onDataChanged }: { onDataChanged: () => v
                     ? 'Syncing…'
                     : link
                     ? `Synced with “${link.listName}” · ${formatAgo(link.lastSync)}`
-                    : 'Only saved in this browser'}
+                    : 'Not sent to To Do'}
                 </div>
               </div>
               <div className="settings-row-control">
@@ -236,8 +239,8 @@ export default function SyncSettings({ onDataChanged }: { onDataChanged: () => v
             <div>
               <div className="settings-row-label">Sync now</div>
               <div className="settings-row-hint">
-                Sends everything new or changed here to To Do and brings back changes made there. Also the Sync button in
-                the top bar, or press S.
+                Sends new tasks, renames, completions and deletions to To Do, and brings back the same from there. Also the
+                Sync button in the top bar, or press S.
               </div>
             </div>
             <div className="settings-row-control">

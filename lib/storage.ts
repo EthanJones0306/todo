@@ -22,27 +22,8 @@ export function loadProjects(mode: Mode): Project[] {
   }
 }
 
-/** The project fields that round-trip to Microsoft To Do (task notes and steps). */
-function projectSyncKey(p: Project): string {
-  return JSON.stringify([p.description, p.phases.map(ph => [ph.id, ph.title, ph.status === 'done'])])
-}
-
 export function saveProjects(mode: Mode, projects: Project[]): void {
   if (typeof window === 'undefined') return
-  const stored = new Map(loadProjects(mode).map(p => [p.id, p]))
-  let changed = false
-  const next = projects.map(p => {
-    const old = stored.get(p.id)
-    const edited = !old || projectSyncKey(old) !== projectSyncKey(p)
-    if (edited) changed = true
-    return { ...p, dirty: edited || !!old?.dirty, knownChecklistIds: old?.knownChecklistIds ?? p.knownChecklistIds }
-  })
-  localStorage.setItem(PROJECTS_KEY(mode), JSON.stringify(next))
-  if (changed) window.dispatchEvent(new CustomEvent('arcade-local-change', { detail: { mode } }))
-}
-
-/** Save projects as-is, without marking anything for upload. Used by sync. */
-export function saveProjectsRaw(mode: Mode, projects: Project[]): void {
   localStorage.setItem(PROJECTS_KEY(mode), JSON.stringify(projects))
 }
 

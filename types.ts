@@ -35,8 +35,6 @@ export interface Phase {
   completedAt?: string
   createdAt: string
   updatedAt: string
-  /** Microsoft To Do checklist item id */
-  remoteId?: string
 }
 
 export interface Project {
@@ -48,10 +46,6 @@ export interface Project {
   createdAt: string
   updatedAt: string
   mode: Mode
-  /** Local changes not yet pushed to Microsoft To Do */
-  dirty?: boolean
-  /** Checklist item ids seen on the remote task, so we only delete steps we know about */
-  knownChecklistIds?: string[]
 }
 
 export const CATEGORY_ORDER: Category[] = ['once', 'daily', 'weekly', 'monthly', 'custom']
