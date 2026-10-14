@@ -24,6 +24,7 @@ const SHORTCUTS: { keys: string[]; label: string }[] = [
   { keys: ['N'], label: 'New task' },
   { keys: ['/'], label: 'Search tasks' },
   { keys: ['1', '–', '8'], label: 'Jump to view' },
+  { keys: ['S'], label: 'Sync with Microsoft To Do' },
   { keys: ['['], label: 'Toggle sidebar' },
   { keys: [','], label: 'Open settings' },
   { keys: ['?'], label: 'Keyboard shortcuts' },

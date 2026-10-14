@@ -9,7 +9,7 @@ import SettingsModal, { SettingsTab } from '@/components/SettingsModal'
 import Icon from '@/components/Icon'
 import { LOCAL_CHANGE_EVENT, DATA_CHANGE_EVENT } from '@/lib/todos'
 import { getMsConfig, getMsal } from '@/lib/sync/msal'
-import { loadLinks, requestSync, STATUS_EVENT } from '@/lib/sync/engine'
+import { loadLinks, pendingCount, requestSync, STATUS_EVENT } from '@/lib/sync/engine'
 import { formatAgo, useSyncStatus } from '@/lib/sync/useSync'
 
 interface Props {
@@ -51,11 +51,17 @@ export default function AppShell({
 
   const [projects, setProjects] = useState<SidebarProject[]>([])
   const [linked, setLinked] = useState(false)
+  const [pending, setPending] = useState(0)
   const syncStatus = useSyncStatus()
 
-  // Background sync: on load, shortly after local edits, on focus and every minute.
+  // Always start MSAL so a sign-in redirect gets completed, even when syncing is manual.
   useEffect(() => {
-    if (!getMsConfig()) return
+    getMsal()?.catch(() => {})
+  }, [])
+
+  // Optional background sync: on load, shortly after local edits, on focus and every minute.
+  useEffect(() => {
+    if (!getMsConfig() || !settings.autoSync) return
     getMsal()
       ?.then(() => requestSync())
       .catch(() => {})
@@ -78,13 +84,22 @@ export default function AppShell({
       window.removeEventListener('focus', now)
       window.removeEventListener('online', now)
     }
-  }, [])
+  }, [settings.autoSync])
 
   useEffect(() => {
-    const update = () => setLinked(!!loadLinks()[mode])
+    const update = () => {
+      setLinked(!!loadLinks()[mode])
+      setPending(pendingCount(mode))
+    }
     update()
     window.addEventListener(STATUS_EVENT, update)
-    return () => window.removeEventListener(STATUS_EVENT, update)
+    window.addEventListener(LOCAL_CHANGE_EVENT, update)
+    window.addEventListener(DATA_CHANGE_EVENT, update)
+    return () => {
+      window.removeEventListener(STATUS_EVENT, update)
+      window.removeEventListener(LOCAL_CHANGE_EVENT, update)
+      window.removeEventListener(DATA_CHANGE_EVENT, update)
+    }
   }, [mode])
 
   useEffect(() => {
@@ -119,6 +134,9 @@ export default function AppShell({
       } else if (e.key === '?') {
         e.preventDefault()
         setSettingsTab('shortcuts')
+      } else if ((e.key === 's' || e.key === 'S') && loadLinks()[mode]) {
+        e.preventDefault()
+        requestSync()
       } else if (e.key === '[') {
         e.preventDefault()
         updateSettings({ sidebarCollapsed: !settings.sidebarCollapsed })
@@ -126,7 +144,7 @@ export default function AppShell({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [settingsTab, settings.sidebarCollapsed, updateSettings])
+  }, [settingsTab, settings.sidebarCollapsed, updateSettings, mode])
 
   return (
     <div className={`app ${settings.sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
@@ -160,25 +178,33 @@ export default function AppShell({
           <div className="topbar-spacer" />
           {linked && (
             <button
-              className={`sync-pill is-${syncStatus.phase}`}
-              onClick={() => (syncStatus.phase === 'signed-out' || syncStatus.phase === 'error' ? setSettingsTab('sync') : requestSync())}
-              title={syncStatus.error ?? `Last synced ${formatAgo(syncStatus.lastSync ?? loadLinks()[mode]?.lastSync)} — click to sync now`}
+              className={`sync-btn is-${syncStatus.phase}`}
+              onClick={() =>
+                syncStatus.phase === 'signed-out' || syncStatus.phase === 'error' ? setSettingsTab('sync') : requestSync()
+              }
+              disabled={syncStatus.phase === 'syncing'}
+              title={
+                syncStatus.error ??
+                `Sync with Microsoft To Do (S) · last synced ${formatAgo(syncStatus.lastSync ?? loadLinks()[mode]?.lastSync)}`
+              }
             >
-              <Icon
-                name={syncStatus.phase === 'syncing' ? 'refresh' : syncStatus.phase === 'idle' ? 'cloud' : 'cloudOff'}
-                size={14}
-              />
+              <Icon name={syncStatus.phase === 'error' || syncStatus.phase === 'signed-out' ? 'cloudOff' : 'refresh'} size={14} />
               <span>
                 {syncStatus.phase === 'syncing'
-                  ? 'Syncing'
-                  : syncStatus.phase === 'idle'
-                  ? 'Synced'
+                  ? 'Syncing…'
+                  : syncStatus.phase === 'signed-out'
+                  ? 'Sign in to sync'
+                  : syncStatus.phase === 'error'
+                  ? 'Sync failed'
                   : syncStatus.phase === 'offline'
                   ? 'Offline'
-                  : syncStatus.phase === 'signed-out'
-                  ? 'Sign in'
-                  : 'Sync error'}
+                  : 'Sync'}
               </span>
+              {pending > 0 && syncStatus.phase !== 'syncing' && (
+                <span className="sync-badge" title={`${pending} change${pending === 1 ? '' : 's'} not yet in To Do`}>
+                  {pending}
+                </span>
+              )}
             </button>
           )}
           <button className="icon-btn" onClick={() => setSettingsTab('appearance')} aria-label="Settings" title="Settings ( , )">

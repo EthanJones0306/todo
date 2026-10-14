@@ -71,6 +71,17 @@ export function setLink(mode: Mode, link: ListLink | null): void {
   setStatus({ ...status, lastSync: undefined, error: undefined })
 }
 
+/** Number of local changes in a linked workspace that haven't been sent to To Do yet. */
+export function pendingCount(mode: Mode): number {
+  if (!loadLinks()[mode]) return 0
+  return (
+    loadTodos(mode).filter(t => !t.remoteId || t.dirty).length +
+    loadProjects(mode).filter(p => p.dirty).length +
+    loadDeleted(mode).length +
+    loadDeletedSteps(mode).length
+  )
+}
+
 /** True if a linked workspace has edits that haven't reached To Do yet. */
 export function hasPendingChanges(): boolean {
   const links = loadLinks()

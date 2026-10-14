@@ -2038,32 +2038,48 @@ html[data-theme='crt'] .switch-thumb {
 }
 
 /* ---------- Sync ---------- */
-.sync-pill {
+.sync-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 28px;
-  padding: 0 10px;
+  height: 30px;
+  padding: 0 12px;
   border-radius: var(--radius-pill);
-  font-size: 0.75rem;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--text-3);
-  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  color: var(--text-2);
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
-.sync-pill:hover {
+.sync-btn:hover:not(:disabled) {
   background: var(--surface-2);
   color: var(--text);
 }
-.sync-pill.is-idle .icon {
-  color: var(--success);
+.sync-btn:disabled {
+  cursor: progress;
 }
-.sync-pill.is-syncing .icon {
+.sync-btn.is-syncing .icon {
   animation: spin 900ms linear infinite;
 }
-.sync-pill.is-error,
-.sync-pill.is-signed-out {
+.sync-btn.is-error,
+.sync-btn.is-signed-out {
   color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
   background: var(--danger-soft);
+}
+.sync-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 18px;
+  text-align: center;
 }
 @keyframes spin {
   to {
@@ -2128,7 +2144,7 @@ html[data-theme='crt'] .switch-thumb {
   .sync-fields {
     grid-template-columns: 1fr;
   }
-  .sync-pill span {
+  .sync-btn > span:not(.sync-badge) {
     display: none;
   }
 }

@@ -21,6 +21,8 @@ export interface Settings {
   confirmDelete: boolean
   weekStartsOn: 0 | 1
   sidebarCollapsed: boolean
+  /** Sync with Microsoft To Do in the background instead of only when the Sync button is pressed */
+  autoSync: boolean
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -35,6 +37,7 @@ export const DEFAULT_SETTINGS: Settings = {
   confirmDelete: false,
   weekStartsOn: 1,
   sidebarCollapsed: false,
+  autoSync: false,
 }
 
 const CHANGE_EVENT = 'arcade-settings-change'

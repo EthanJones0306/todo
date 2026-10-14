@@ -8,6 +8,8 @@ import { createList, GraphList, listLists } from '@/lib/sync/graph'
 import { forgetSyncedData, hasPendingChanges, loadLinks, requestSync, setLink, STATUS_EVENT } from '@/lib/sync/engine'
 import { formatAgo, useSyncStatus } from '@/lib/sync/useSync'
 import Icon from '@/components/Icon'
+import { Switch } from '@/components/ui'
+import { useSettings } from '@/lib/settings'
 
 const NEW_LIST = '__new__'
 
@@ -23,6 +25,7 @@ export default function SyncSettings({ onDataChanged }: { onDataChanged: () => v
   const [copied, setCopied] = useState(false)
   const [confirmDiscard, setConfirmDiscard] = useState(false)
   const status = useSyncStatus()
+  const [settings, updateSettings] = useSettings()
   const redirectUri = typeof window === 'undefined' ? '' : getRedirectUri()
 
   useEffect(() => {
@@ -228,17 +231,31 @@ export default function SyncSettings({ onDataChanged }: { onDataChanged: () => v
         })}
 
       {account && (links.personal || links.work) && (
-        <div className="settings-row">
-          <div>
-            <div className="settings-row-label">Sync now</div>
-            <div className="settings-row-hint">Changes upload instantly and download every minute while the app is open.</div>
+        <>
+          <div className="settings-row">
+            <div>
+              <div className="settings-row-label">Sync now</div>
+              <div className="settings-row-hint">
+                Sends everything new or changed here to To Do and brings back changes made there. Also the Sync button in
+                the top bar, or press S.
+              </div>
+            </div>
+            <div className="settings-row-control">
+              <button className="btn btn-primary btn-sm" disabled={status.phase === 'syncing'} onClick={() => requestSync().then(onDataChanged)}>
+                <Icon name="refresh" size={14} /> {status.phase === 'syncing' ? 'Syncing…' : 'Sync'}
+              </button>
+            </div>
           </div>
-          <div className="settings-row-control">
-            <button className="btn btn-secondary btn-sm" disabled={status.phase === 'syncing'} onClick={() => requestSync().then(onDataChanged)}>
-              <Icon name="refresh" size={14} /> {status.phase === 'syncing' ? 'Syncing…' : 'Sync'}
-            </button>
+          <div className="settings-row">
+            <div>
+              <div className="settings-row-label">Sync automatically</div>
+              <div className="settings-row-hint">Also sync in the background: after edits, when you return to the tab, and every minute.</div>
+            </div>
+            <div className="settings-row-control">
+              <Switch label="Sync automatically" checked={settings.autoSync} onChange={autoSync => updateSettings({ autoSync })} />
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       {(error || status.error) && (
