@@ -181,6 +181,45 @@ html[data-theme='monochrome'] {
   --cat-custom: #000;
 }
 
+/* PCH brand theme — colours and Arial from the PCH Power BI theme */
+html[data-theme='pch'] {
+  color-scheme: light;
+  --bg: #f4f6f9;
+  --sidebar: #eaeef3;
+  --surface: #ffffff;
+  --surface-2: #f1f4f8;
+  --surface-3: #e4e9f0;
+  --border: rgba(0, 47, 108, 0.1);
+  --border-strong: rgba(0, 47, 108, 0.18);
+  --text: #002f6c;
+  --text-2: #4b5a6e;
+  --text-3: #707372;
+  --accent: #002f6c;
+  --accent-hover: #00306c;
+  --accent-fg: #ffffff;
+  --accent-soft: rgba(0, 47, 108, 0.08);
+  --danger: #bb4a4a;
+  --danger-soft: rgba(187, 74, 74, 0.1);
+  --success: #76881d;
+  --warning: #d9ad00;
+  --shadow-sm: 0 1px 2px rgba(0, 47, 108, 0.06);
+  --shadow-md: 0 1px 2px rgba(0, 47, 108, 0.05), 0 4px 12px rgba(0, 47, 108, 0.07);
+  --shadow-lg: 0 8px 24px rgba(0, 47, 108, 0.12), 0 24px 64px rgba(0, 47, 108, 0.16);
+  --overlay: rgba(0, 31, 72, 0.35);
+  --radius: 8px;
+  --radius-sm: 6px;
+  --radius-xs: 4px;
+  --font-body: Arial, Helvetica, sans-serif;
+  --font-display: Arial, Helvetica, sans-serif;
+  --display-weight: 700;
+  --display-tracking: -0.01em;
+  --cat-daily: #3599b8;
+  --cat-weekly: #76881d;
+  --cat-monthly: #d9ad00;
+  --cat-custom: #168980;
+  --cat-once: #707372;
+}
+
 html[data-theme='paper'] {
   color-scheme: light;
   --bg: #efe6cf;

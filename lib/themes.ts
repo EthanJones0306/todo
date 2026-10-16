@@ -9,6 +9,7 @@ export interface ThemeMeta {
 }
 
 export const THEMES: ThemeMeta[] = [
+  { id: 'pch', label: 'PCH', tone: 'light', swatch: ['#f4f6f9', '#ffffff', '#002F6C', '#002F6C'] },
   { id: 'standard', label: 'Standard', tone: 'light', swatch: ['#f7f7f8', '#ffffff', '#5b5bd6', '#0f1115'] },
   { id: 'slate', label: 'Slate', tone: 'light', swatch: ['#f6f8fa', '#ffffff', '#3b4a63', '#0f172a'] },
   { id: 'stone', label: 'Stone', tone: 'light', swatch: ['#f7f6f3', '#ffffff', '#7c5b3a', '#1c1917'] },

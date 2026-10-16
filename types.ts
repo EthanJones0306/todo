@@ -1,7 +1,7 @@
 export type Category = 'once' | 'daily' | 'weekly' | 'monthly' | 'custom'
 export type RecurrenceDays = number[]
 export type Mode = 'personal' | 'work'
-export type Theme = 'neon' | 'crt' | 'paper' | 'standard' | 'midnight' | 'forest' | 'sunset' | 'nord' | 'slate' | 'stone' | 'zinc' | 'monochrome'
+export type Theme = 'neon' | 'crt' | 'paper' | 'standard' | 'midnight' | 'forest' | 'sunset' | 'nord' | 'slate' | 'stone' | 'zinc' | 'monochrome' | 'pch'
 export type Filter = 'all' | Category
 export type PhaseStatus = 'pending' | 'active' | 'done'
 
