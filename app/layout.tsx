@@ -40,7 +40,7 @@ const ebGaramond = EB_Garamond({
 })
 
 export const metadata: Metadata = {
-  title: 'Arcade Tasks',
+  title: 'Todo',
   description: 'A focused, local-first task manager with smart views, recurring tasks, projects and twelve themes.',
 }
 

@@ -70,7 +70,7 @@ export default function SettingsModal({ initialTab = 'appearance', settings, onC
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `arcade-tasks-${new Date().toISOString().slice(0, 10)}.json`
+    a.download = `todo-backup-${new Date().toISOString().slice(0, 10)}.json`
     a.click()
     URL.revokeObjectURL(url)
     flash('Backup downloaded')
@@ -87,7 +87,7 @@ export default function SettingsModal({ initialTab = 'appearance', settings, onC
       if (entries.length === 0) throw new Error()
       setConfirm({ importData: Object.fromEntries(entries) as Record<string, string> })
     } catch {
-      flash('That file is not an Arcade backup')
+      flash('That file is not a Todo backup')
     }
   }
 
@@ -313,7 +313,7 @@ export default function SettingsModal({ initialTab = 'appearance', settings, onC
                   <Icon name="check" size={26} />
                 </div>
                 <div>
-                  <div className="about-name">Arcade Tasks</div>
+                  <div className="about-name">Todo</div>
                   <div className="muted">Version 1.0 · Local-first, no account required</div>
                 </div>
               </div>

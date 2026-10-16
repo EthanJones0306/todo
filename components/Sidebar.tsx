@@ -84,8 +84,7 @@ export default function Sidebar({
           <div className="brand-mark">
             <Icon name="check" size={14} />
           </div>
-          <span className="brand-name">Arcade</span>
-          <span className="brand-tag">Tasks</span>
+          <span className="brand-name">Todo</span>
         </div>
 
         <div className="workspace-switch" role="radiogroup" aria-label="Workspace">

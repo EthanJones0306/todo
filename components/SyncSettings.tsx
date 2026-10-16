@@ -94,7 +94,7 @@ export default function SyncSettings({ onDataChanged }: { onDataChanged: () => v
       } else {
         let list = lists?.find(l => l.id === value)
         if (value === NEW_LIST) {
-          list = await createList(await getToken(), `${MODE_LABEL[mode]} · Arcade`)
+          list = await createList(await getToken(), `Todo · ${MODE_LABEL[mode]}`)
           setLists(prev => [...(prev ?? []), list!])
         }
         if (list) setLink(mode, { listId: list.id, listName: list.displayName })
@@ -226,7 +226,7 @@ export default function SyncSettings({ onDataChanged }: { onDataChanged: () => v
                       {l.id === otherListId ? ' (used by other workspace)' : ''}
                     </option>
                   ))}
-                  {lists && <option value={NEW_LIST}>+ New list “{MODE_LABEL[mode]} · Arcade”</option>}
+                  {lists && <option value={NEW_LIST}>+ New list “Todo · {MODE_LABEL[mode]}”</option>}
                 </select>
               </div>
             </div>
