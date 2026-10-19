@@ -18,12 +18,18 @@ interface MenuProps {
 export function Menu({ label, icon = 'more', triggerClassName = 'icon-btn', triggerContent, align = 'end', width = 220, children }: MenuProps) {
   const [open, setOpen] = useState(false)
   const [dropUp, setDropUp] = useState(false)
+  const [maxHeight, setMaxHeight] = useState<number | undefined>(undefined)
   const ref = useRef<HTMLDivElement>(null)
 
+  // Open on whichever side has more room, and never taller than that room.
   useLayoutEffect(() => {
     if (!open || !ref.current) return
     const rect = ref.current.getBoundingClientRect()
-    setDropUp(window.innerHeight - rect.bottom < 340 && rect.top > 340)
+    const below = window.innerHeight - rect.bottom - 16
+    const above = rect.top - 16
+    const up = below < 340 && above > below
+    setDropUp(up)
+    setMaxHeight(Math.max(160, up ? above : below))
   }, [open])
 
   useEffect(() => {
@@ -62,7 +68,7 @@ export function Menu({ label, icon = 'more', triggerClassName = 'icon-btn', trig
         <div
           className={`menu ${align === 'start' ? 'menu-start' : 'menu-end'} ${dropUp ? 'menu-up' : ''}`}
           role="menu"
-          style={{ width }}
+          style={{ width, maxHeight }}
         >
           {children(() => setOpen(false))}
         </div>

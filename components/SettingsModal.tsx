@@ -216,6 +216,7 @@ export default function SettingsModal({ initialTab = 'appearance', settings, onC
                   value={settings.sort}
                   onChange={sort => onChange({ sort })}
                   options={[
+                    { value: 'priority', label: 'Priority' },
                     { value: 'manual', label: 'Manual' },
                     { value: 'due', label: 'Due date' },
                     { value: 'alpha', label: 'A–Z' },

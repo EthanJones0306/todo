@@ -7,7 +7,7 @@ import { SETTINGS_KEY, THEME_KEY } from '@/lib/init-script'
 export type ThemeChoice = 'system' | Theme
 export type Density = 'comfortable' | 'compact'
 export type FontScale = 'sm' | 'md' | 'lg'
-export type SortOrder = 'manual' | 'due' | 'alpha'
+export type SortOrder = 'priority' | 'manual' | 'due' | 'alpha'
 
 export interface Settings {
   theme: ThemeChoice
@@ -32,7 +32,7 @@ export const DEFAULT_SETTINGS: Settings = {
   reduceMotion: false,
   name: '',
   defaultCategory: 'once',
-  sort: 'manual',
+  sort: 'priority',
   showCompleted: true,
   confirmDelete: false,
   weekStartsOn: 1,
@@ -50,6 +50,11 @@ export function loadSettings(): Settings {
   } catch {}
   // The theme predates the settings object and is still read by the pre-paint script.
   const theme = (localStorage.getItem(THEME_KEY) as ThemeChoice | null) ?? stored.theme
+  // One-time move to the Priority sort when it was introduced (2026-10-19).
+  if (!(stored as { prioritySortSet?: boolean }).prioritySortSet) {
+    stored.sort = 'priority'
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...stored, prioritySortSet: true }))
+  }
   return { ...DEFAULT_SETTINGS, ...stored, ...(theme ? { theme } : {}) }
 }
 
@@ -68,7 +73,7 @@ export function applySettingsToDocument(s: Settings): void {
 }
 
 export function saveSettings(s: Settings): void {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s))
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...s, prioritySortSet: true }))
   localStorage.setItem(THEME_KEY, s.theme)
   applySettingsToDocument(s)
   window.dispatchEvent(new Event(CHANGE_EVENT))

@@ -2,6 +2,7 @@
 
 import { Category, CATEGORY_ORDER, Mode, MODE_ORDER, RecurrenceDays, Todo } from '@/types'
 import { addDays, getTodayString, parseDate, toDateString } from '@/lib/date'
+import { withParsedTitle } from '@/lib/priority'
 
 const TODOS_KEY = (mode: Mode) => `arcade-todos-${mode}`
 const MODE_KEY = 'arcade-mode'
@@ -24,7 +25,8 @@ export function loadTodos(mode: Mode): Todo[] {
   if (typeof window === 'undefined') return []
   try {
     const parsed = JSON.parse(localStorage.getItem(TODOS_KEY(mode)) || '[]')
-    return parsed.map((t: any) => ({ ...t, category: normalizeCategory(t.category) }))
+    // Titles pulled from To Do before prefixes were understood ("1_Call bank") are normalised here.
+    return parsed.map((t: any) => withParsedTitle({ ...t, category: normalizeCategory(t.category) }))
   } catch {
     return []
   }
@@ -34,9 +36,9 @@ export const LOCAL_CHANGE_EVENT = 'arcade-local-change'
 export const DATA_CHANGE_EVENT = 'arcade-data-change'
 const DELETED_KEY = (mode: Mode) => `arcade-sync-deleted-${mode}`
 
-/** The fields sent to Microsoft To Do (name and done); a change to either needs pushing. */
-function syncKey(t: Todo): string {
-  return JSON.stringify([t.text, t.done])
+/** What To Do sees: the title (name plus priority/daily prefixes) and done state. */
+export function syncKey(t: Todo): string {
+  return JSON.stringify([t.text, t.done, t.rank ?? null, t.priority ?? null, t.category === 'daily'])
 }
 
 /**

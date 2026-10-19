@@ -1418,6 +1418,20 @@ html[data-density='compact'] .task-meta {
   color: var(--danger);
   background: var(--danger-soft);
 }
+.chip-priority.is-rank {
+  color: var(--accent-fg);
+  background: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.chip-priority.is-high {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+.chip-priority.is-low {
+  color: var(--text-3);
+  background: transparent;
+  border: 1px dashed var(--border-strong);
+}
 .chip-cat {
   color: var(--c);
   background: color-mix(in srgb, var(--c) 13%, transparent);
@@ -1472,6 +1486,8 @@ html[data-density='compact'] .task-meta {
   position: absolute;
   top: calc(100% + 6px);
   z-index: 60;
+  max-height: min(72vh, 600px);
+  overflow-y: auto;
   padding: 5px;
   border-radius: var(--radius);
   background: var(--surface);
@@ -1583,6 +1599,26 @@ html[data-theme='neon'] .menu {
   font-weight: 550;
   color: var(--text-2);
   white-space: nowrap;
+}
+.menu-num {
+  flex: 0 0 40px;
+  min-width: 0;
+  height: 28px;
+  padding: 0 4px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  font-size: 0.75rem;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+.menu-num::-webkit-inner-spin-button,
+.menu-num::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+}
+.menu-num:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 .menu-quick button[aria-label] {
   flex: 0 0 28px;

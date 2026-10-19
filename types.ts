@@ -16,6 +16,10 @@ export interface Todo {
   originalId?: string
   isProject?: boolean
   projectId?: string
+  /** Ranked priority (1 = most important); written to To Do as a "1_" title prefix */
+  rank?: number
+  /** High/low priority; written to To Do as an "H_" / "L_" title prefix */
+  priority?: 'high' | 'low'
   /** Microsoft To Do task id when this workspace is synced */
   remoteId?: string
   /** lastModifiedDateTime of the remote task when we last synced it */

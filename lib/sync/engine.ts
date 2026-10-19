@@ -2,7 +2,7 @@
 
 import { Mode, MODE_ORDER, Todo } from '@/types'
 import { loadProjects, saveProjects } from '@/lib/storage'
-import { DATA_CHANGE_EVENT, loadDeleted, loadTodos, saveDeleted, saveTodosRaw } from '@/lib/todos'
+import { DATA_CHANGE_EVENT, loadDeleted, syncKey, loadTodos, saveDeleted, saveTodosRaw } from '@/lib/todos'
 import { getAccount, getToken, ReauthRequired } from '@/lib/sync/msal'
 import { createTask, deleteTask, GraphError, GraphTask, listTasks, updateTask } from '@/lib/sync/graph'
 import { newTaskFromGraph, syncedFieldsFromGraph, toGraphTask } from '@/lib/sync/mapping'
@@ -114,8 +114,8 @@ function patchStoredTodo(mode: Mode, id: string, patch: (t: Todo) => Partial<Tod
   )
 }
 
-// Only the name and done state go to To Do; everything else stays in this app.
-const contentKey = (t: Todo) => JSON.stringify([t.text, t.done])
+// Only the title (with priority prefixes) and done state go to To Do; everything else stays here.
+const contentKey = syncKey
 
 async function pushTodos(mode: Mode, listId: string, token: string): Promise<void> {
   for (const todo of loadTodos(mode)) {

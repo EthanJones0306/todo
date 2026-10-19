@@ -8,6 +8,7 @@ import { createProjectFromTodo, loadProjects } from '@/lib/storage'
 import { DATA_CHANGE_EVENT, loadMode, loadTodos, markDeleted, saveMode, saveTodos, shouldShowToday, getNextDueDate } from '@/lib/todos'
 import { addDays, formatLongToday, formatRelativeDate, getTodayString, greeting, isDueToday, isOverdue } from '@/lib/date'
 import { Settings, useSettings } from '@/lib/settings'
+import { Priority, priorityCompare, priorityLabel, withParsedTitle } from '@/lib/priority'
 import AppShell, { isTypingTarget } from '@/components/AppShell'
 import { ALL_VIEWS, View, VIEW_LABEL } from '@/components/Sidebar'
 import Icon from '@/components/Icon'
@@ -27,6 +28,8 @@ function matchesView(t: Todo, view: View): boolean {
 }
 
 function sortTodos(list: Todo[], sort: Settings['sort']): Todo[] {
+  // Array.prototype.sort is stable, so equal priorities keep their manual order.
+  if (sort === 'priority') return [...list].sort(priorityCompare)
   if (sort === 'alpha') return [...list].sort((a, b) => a.text.localeCompare(b.text))
   if (sort === 'due') return [...list].sort((a, b) => (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999'))
   return list
@@ -45,6 +48,7 @@ export default function Home() {
   const [newCategory, setNewCategory] = useState<Category>('once')
   const [newDueDate, setNewDueDate] = useState('')
   const [newRecurrenceDays, setNewRecurrenceDays] = useState<RecurrenceDays>([])
+  const [newPriority, setNewPriority] = useState<PriorityValue>({})
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
@@ -111,17 +115,20 @@ export default function Home() {
     const text = input.trim()
     if (!text) return
     const dueDate = newDueDate || (view === 'upcoming' ? addDays(getTodayString(), 1) : undefined)
-    const todo: Todo = {
+    // Prefixes typed into the name ("H_Call bank", "zz_Standup") work the same as in To Do.
+    const todo: Todo = withParsedTitle({
       id: crypto.randomUUID(),
       text,
       done: false,
       category: newCategory,
       dueDate,
       recurrenceDays: newCategory === 'custom' && newRecurrenceDays.length > 0 ? newRecurrenceDays : undefined,
-    }
+      ...newPriority,
+    })
     setTodos(prev => [...prev, todo])
     setInput('')
     setNewDueDate('')
+    setNewPriority({})
   }
 
   const toggleTodo = (id: string) => {
@@ -227,7 +234,11 @@ export default function Home() {
 
   const saveEdit = (id: string) => {
     const text = editText.trim()
-    if (text) patchTodo(id, { text })
+    const todo = todos.find(t => t.id === id)
+    if (text && todo) {
+      const parsed = withParsedTitle({ ...todo, text })
+      patchTodo(id, { text: parsed.text, rank: parsed.rank, priority: parsed.priority, category: parsed.category })
+    }
     setEditingId(null)
   }
 
@@ -328,6 +339,7 @@ export default function Home() {
         onSaveEdit={() => saveEdit(todo.id)}
         onCancelEdit={() => setEditingId(null)}
         onSetDue={dueDate => patchTodo(todo.id, { dueDate })}
+        onSetPriority={value => patchTodo(todo.id, { rank: value.rank, priority: value.priority })}
         onSetCategory={category =>
           patchTodo(todo.id, { category, recurrenceDays: category === 'custom' ? todo.recurrenceDays : undefined })
         }
@@ -339,6 +351,12 @@ export default function Home() {
         canMove={settings.sort === 'manual'}
         meta={
           <>
+            {priorityLabel(todo) && (
+              <span className={`chip chip-priority is-${todo.rank ? 'rank' : todo.priority}`}>
+                {todo.priority === 'high' && !todo.rank && <Icon name="arrowUp" size={12} />}
+                {priorityLabel(todo)}
+              </span>
+            )}
             {todo.dueDate && (
               <span className={`chip chip-due ${overdue ? 'is-overdue' : ''} ${today ? 'is-today' : ''}`}>
                 <Icon name={overdue ? 'flag' : 'calendar'} size={12} />
@@ -467,6 +485,31 @@ export default function Home() {
                 aria-label="Due date"
               />
             </div>
+            <Menu
+              label="Priority"
+              align="start"
+              width={232}
+              triggerClassName={`pill ${priorityLabel(newPriority) ? 'pill-set' : ''}`}
+              triggerContent={
+                <>
+                  <Icon name="flag" size={14} />
+                  {priorityLabel(newPriority) ?? 'Priority'}
+                </>
+              }
+            >
+              {close => (
+                <>
+                  <MenuLabel>Priority</MenuLabel>
+                  <PriorityPicker
+                    value={newPriority}
+                    onPick={v => {
+                      setNewPriority(v)
+                      close()
+                    }}
+                  />
+                </>
+              )}
+            </Menu>
             <Menu
               label="Repeat"
               align="start"
@@ -643,6 +686,7 @@ interface TaskRowProps {
   onCancelEdit: () => void
   onSetDue: (d: string | undefined) => void
   onSetCategory: (c: Category) => void
+  onSetPriority: (v: PriorityValue) => void
   onConvert: () => void
   onOpenProject: () => void
   onMoveToTop: () => void
@@ -764,6 +808,9 @@ function TaskRow(p: TaskRowProps) {
                   )}
                 </div>
                 <MenuSeparator />
+                <MenuLabel>Priority</MenuLabel>
+                <PriorityPicker value={todo} onPick={v => run(() => p.onSetPriority(v))()} />
+                <MenuSeparator />
                 <MenuLabel>Repeat</MenuLabel>
                 {CATEGORY_ORDER.map(c => (
                   <MenuItem key={c} checked={todo.category === c} onClick={run(() => p.onSetCategory(c))}>
@@ -806,5 +853,49 @@ function EmptyState({ view, searching }: { view: View; searching: boolean }) {
       <div className="empty-title">{copy.title}</div>
       <p className="empty-body">{copy.body}</p>
     </div>
+  )
+}
+
+/* ---------- Priority picker ---------- */
+
+type PriorityValue = { rank?: number; priority?: Priority }
+
+/** 1–5 ranks plus any other number, High, Low or none — shown inside a menu. */
+function PriorityPicker({ value, onPick }: { value: PriorityValue; onPick: (v: PriorityValue) => void }) {
+  const [custom, setCustom] = useState(value.rank && value.rank > 5 ? String(value.rank) : '')
+  return (
+    <>
+      <div className="menu-quick">
+        {[1, 2, 3, 4, 5].map(n => (
+          <button key={n} className={value.rank === n ? 'active' : ''} onClick={() => onPick({ rank: n })}>
+            {n}
+          </button>
+        ))}
+        <input
+          className="menu-num"
+          type="number"
+          min={1}
+          placeholder="#"
+          value={custom}
+          onChange={e => setCustom(e.target.value)}
+          onKeyDown={e => {
+            const n = parseInt(custom, 10)
+            if (e.key === 'Enter' && n > 0) onPick({ rank: n })
+          }}
+          aria-label="Priority number"
+        />
+      </div>
+      <div className="menu-quick">
+        <button className={!value.rank && value.priority === 'high' ? 'active' : ''} onClick={() => onPick({ priority: 'high' })}>
+          High
+        </button>
+        <button className={!value.rank && value.priority === 'low' ? 'active' : ''} onClick={() => onPick({ priority: 'low' })}>
+          Low
+        </button>
+        <button className={!value.rank && !value.priority ? 'active' : ''} onClick={() => onPick({})}>
+          None
+        </button>
+      </div>
+    </>
   )
 }
