@@ -8,7 +8,7 @@ import { createProjectFromTodo, loadProjects } from '@/lib/storage'
 import { DATA_CHANGE_EVENT, loadMode, loadTodos, markDeleted, saveMode, saveTodos, shouldShowToday, getNextDueDate } from '@/lib/todos'
 import { addDays, formatLongToday, formatRelativeDate, getTodayString, greeting, isDueToday, isOverdue } from '@/lib/date'
 import { Settings, useSettings } from '@/lib/settings'
-import { Priority, priorityCompare, priorityLabel, withParsedTitle } from '@/lib/priority'
+import { canReprioritise, Priority, priorityCompare, priorityLabel, reprioritise, withParsedTitle } from '@/lib/priority'
 import AppShell, { isTypingTarget } from '@/components/AppShell'
 import { ALL_VIEWS, View, VIEW_LABEL } from '@/components/Sidebar'
 import Icon from '@/components/Icon'
@@ -219,6 +219,23 @@ export default function Home() {
     })
   }
 
+  /** Priority sort: dropping a task onto another takes that task's place and priority, then tells you what changed. */
+  const moveByPriority = (movedId: string, targetId: string) => {
+    const before = todos
+    const after = reprioritise(todos, movedId, targetId)
+    if (after === before) return
+    setTodos(after)
+    const moved = after.find(t => t.id === movedId)!
+    const wasLabel = priorityLabel(before.find(t => t.id === movedId)!)
+    const nowLabel = priorityLabel(moved)
+    const oldRank = new Map(before.map(t => [t.id, t.rank]))
+    const others = after.filter(t => t.id !== movedId && t.rank !== oldRank.get(t.id)).length
+    // Reordering within the same level (e.g. two High tasks) changes nothing in To Do, so stay quiet.
+    if (wasLabel === nowLabel && others === 0) return
+    const renumbered = others ? ` · ${others} other${others === 1 ? '' : 's'} renumbered` : ''
+    showToast(`“${moved.text}” → ${nowLabel ?? 'no priority'}${renumbered}`, () => setTodos(before))
+  }
+
   const convertToProject = (todo: Todo) => {
     const project = createProjectFromTodo(mode, todo)
     const next = todos.map(t => (t.id === todo.id ? { ...t, isProject: true, projectId: project.id } : t))
@@ -291,7 +308,9 @@ export default function Home() {
   const overdueCount = activeTodos.filter(t => isOverdue(t.dueDate)).length
   const viewTotal = activeTodos.length + completedTodos.length
   const progress = viewTotal ? completedTodos.length / viewTotal : 0
-  const canDrag = settings.sort === 'manual' && view !== 'upcoming' && !query
+  const prioritySort = settings.sort === 'priority' && view !== 'upcoming'
+  const canDrag = (settings.sort === 'manual' || prioritySort) && view !== 'upcoming' && !query
+  const dragIndex = draggingId ? activeTodos.findIndex(t => t.id === draggingId) : -1
 
   const groups: { key: string; label: string; items: Todo[] }[] = (() => {
     if (view !== 'upcoming') return [{ key: 'all', label: '', items: activeTodos }]
@@ -317,6 +336,8 @@ export default function Home() {
           justCompleted === todo.id && 'just-completed',
           draggingId === todo.id && 'dragging',
           dragOverId === todo.id && draggingId !== todo.id && 'drag-over',
+          // Moving down lands below the target, so draw the drop line there.
+          dragOverId === todo.id && dragIndex > -1 && dragIndex < activeTodos.indexOf(todo) && 'drag-below',
         ]
           .filter(Boolean)
           .join(' ')}
@@ -325,9 +346,16 @@ export default function Home() {
           setDraggingId(null)
           setDragOverId(null)
         }}
-        onDragOver={() => setDragOverId(todo.id)}
+        onDragOver={() => {
+          const allowed = !prioritySort || canReprioritise(todos.find(t => t.id === draggingId), todo)
+          setDragOverId(allowed ? todo.id : null)
+          return allowed
+        }}
         onDrop={() => {
-          if (draggingId) moveBefore(draggingId, todo.id)
+          if (draggingId) {
+            if (prioritySort) moveByPriority(draggingId, todo.id)
+            else moveBefore(draggingId, todo.id)
+          }
           setDraggingId(null)
           setDragOverId(null)
         }}
@@ -346,6 +374,16 @@ export default function Home() {
         onConvert={() => convertToProject(todo)}
         onOpenProject={() => router.push(`/project/${todo.projectId}`)}
         onMoveToTop={() => moveToTop(todo.id)}
+        onMoveUp={(() => {
+          const i = activeTodos.indexOf(todo)
+          const target = activeTodos[i - 1]
+          return prioritySort && !query && canReprioritise(todo, target) ? () => moveByPriority(todo.id, target.id) : undefined
+        })()}
+        onMoveDown={(() => {
+          const i = activeTodos.indexOf(todo)
+          const target = activeTodos[i + 1]
+          return prioritySort && !query && canReprioritise(todo, target) ? () => moveByPriority(todo.id, target.id) : undefined
+        })()}
         onDuplicate={() => duplicateTodo(todo)}
         onDelete={() => requestDelete(todo)}
         canMove={settings.sort === 'manual'}
@@ -675,7 +713,8 @@ interface TaskRowProps {
   draggable: boolean
   onDragStart: () => void
   onDragEnd: () => void
-  onDragOver: () => void
+  /** Returns whether the dragged task may be dropped here. */
+  onDragOver: () => boolean
   onDrop: () => void
   onToggle: () => void
   editing: boolean
@@ -690,6 +729,8 @@ interface TaskRowProps {
   onConvert: () => void
   onOpenProject: () => void
   onMoveToTop: () => void
+  onMoveUp?: () => void
+  onMoveDown?: () => void
   onDuplicate: () => void
   onDelete: () => void
   canMove: boolean
@@ -723,8 +764,7 @@ function TaskRow(p: TaskRowProps) {
       onDragEnd={p.onDragEnd}
       onDragOver={e => {
         if (!p.draggable) return
-        e.preventDefault()
-        p.onDragOver()
+        if (p.onDragOver()) e.preventDefault()
       }}
       onDrop={e => {
         e.preventDefault()
@@ -783,6 +823,8 @@ function TaskRow(p: TaskRowProps) {
                 <MenuItem icon="pencil" onClick={run(p.onStartEdit)}>Edit</MenuItem>
                 <MenuItem icon="copy" onClick={run(p.onDuplicate)}>Duplicate</MenuItem>
                 {p.canMove && !todo.done && <MenuItem icon="arrowUp" onClick={run(p.onMoveToTop)}>Move to top</MenuItem>}
+                {p.onMoveUp && <MenuItem icon="arrowUp" onClick={run(p.onMoveUp)}>Move up</MenuItem>}
+                {p.onMoveDown && <MenuItem icon="chevronDown" onClick={run(p.onMoveDown)}>Move down</MenuItem>}
                 {todo.isProject && todo.projectId ? (
                   <MenuItem icon="folder" onClick={run(p.onOpenProject)}>Open project</MenuItem>
                 ) : (

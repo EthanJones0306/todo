@@ -79,3 +79,44 @@ export function priorityLabel(todo: Pick<Todo, 'rank' | 'priority'>): string | n
   if (todo.priority === 'low') return 'Low'
   return null
 }
+
+/**
+ * Drag-and-drop in priority order: move `movedId` to where `targetId` sits and re-derive priorities.
+ * The moved task takes the target's level (ranked, high, normal or low), and every ranked task is
+ * renumbered 1, 2, 3… in its new position, so the To Do title prefixes keep the same order.
+ * Daily (zz_) tasks are ordered separately; dropping across that boundary does nothing.
+ * Ranks are numbered across the whole workspace, not just the visible list, so filtered views stay
+ * consistent with To Do. Returns the original array when nothing changes.
+ */
+export function reprioritise(todos: Todo[], movedId: string, targetId: string): Todo[] {
+  const moved = todos.find(t => t.id === movedId)
+  const target = todos.find(t => t.id === targetId)
+  if (!moved || !target || moved === target || moved.done || target.done) return todos
+  const daily = moved.category === 'daily'
+  if ((target.category === 'daily') !== daily) return todos
+
+  const inGroup = (t: Todo) => !t.done && (t.category === 'daily') === daily
+  const ordered = todos.filter(inGroup).sort(priorityCompare)
+  const movingDown = ordered.indexOf(moved) < ordered.indexOf(target)
+
+  const placed: Todo = target.rank
+    ? { ...moved, rank: Number.MAX_SAFE_INTEGER, priority: undefined }
+    : { ...moved, rank: undefined, priority: target.priority }
+  const rest = ordered.filter(t => t !== moved)
+  const at = rest.indexOf(target) + (movingDown ? 1 : 0)
+  rest.splice(at, 0, placed)
+
+  let rank = 0
+  const renumbered = rest.map(t => {
+    if (!t.rank) return t
+    rank++
+    return t.rank === rank ? t : { ...t, rank }
+  })
+
+  let i = 0
+  return todos.map(t => (inGroup(t) ? renumbered[i++] : t))
+}
+
+export function canReprioritise(moved: Todo | undefined, target: Todo | undefined): boolean {
+  return !!moved && !!target && moved !== target && !target.done && (moved.category === 'daily') === (target.category === 'daily')
+}
