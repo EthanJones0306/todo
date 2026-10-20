@@ -2,7 +2,7 @@
 
 import { Category, CATEGORY_ORDER, Mode, MODE_ORDER, RecurrenceDays, Todo } from '@/types'
 import { addDays, getTodayString, parseDate, toDateString } from '@/lib/date'
-import { withParsedTitle } from '@/lib/priority'
+import { repeatPrefixOf, withParsedTitle } from '@/lib/priority'
 
 const TODOS_KEY = (mode: Mode) => `arcade-todos-${mode}`
 const MODE_KEY = 'arcade-mode'
@@ -36,9 +36,9 @@ export const LOCAL_CHANGE_EVENT = 'arcade-local-change'
 export const DATA_CHANGE_EVENT = 'arcade-data-change'
 const DELETED_KEY = (mode: Mode) => `arcade-sync-deleted-${mode}`
 
-/** What To Do sees: the title (name plus priority/daily prefixes) and done state. */
+/** What To Do sees: the title (name plus priority/repeat prefixes) and done state. */
 export function syncKey(t: Todo): string {
-  return JSON.stringify([t.text, t.done, t.rank ?? null, t.priority ?? null, t.category === 'daily'])
+  return JSON.stringify([t.text, t.done, t.rank ?? null, t.priority ?? null, repeatPrefixOf(t.category) ?? null])
 }
 
 /**

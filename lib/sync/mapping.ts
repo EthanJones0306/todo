@@ -1,11 +1,11 @@
 import { Todo } from '@/types'
 import { toDateString } from '@/lib/date'
 import { GraphDateTime, GraphTask } from '@/lib/sync/graph'
-import { composeTitle, parseTitle } from '@/lib/priority'
+import { composeTitle, parseTitle, repeatPrefixOf } from '@/lib/priority'
 
 /*
- * To Do only gets a task's title and whether it's done. Priority and "daily" travel as title
- * prefixes (see lib/priority.ts); due dates, other repeats and projects live in this app alone.
+ * To Do only gets a task's title and whether it's done. Priority and daily/weekly/monthly travel as
+ * title prefixes (see lib/priority.ts); due dates, custom repeats and projects live in this app alone.
  */
 
 export function toGraphTask(todo: Todo): Partial<GraphTask> {
@@ -24,8 +24,9 @@ export function syncedFieldsFromGraph(task: GraphTask, current: Todo): Partial<T
     text: p.text,
     rank: p.rank,
     priority: p.priority,
-    // zz_ means daily; dropping it in To Do makes a daily task a one-off. Other repeats stay local.
-    category: p.daily ? 'daily' : current.category === 'daily' ? 'once' : current.category,
+    // z_/zz_/zzz_ set daily/weekly/monthly; removing it in To Do makes the task a one-off. Custom stays local.
+    category: p.repeat ?? (repeatPrefixOf(current.category) ? 'once' : current.category),
+    recurrenceDays: p.repeat ? undefined : current.recurrenceDays,
     done,
     completedAt: done ? current.completedAt ?? utcToIso(task.completedDateTime) ?? new Date().toISOString() : undefined,
     remoteId: task.id,
@@ -43,7 +44,7 @@ export function newTaskFromGraph(task: GraphTask): Omit<Todo, 'id'> {
     rank: p.rank,
     priority: p.priority,
     done,
-    category: p.daily ? 'daily' : 'once',
+    category: p.repeat ?? 'once',
     dueDate: due,
     completedAt: done ? utcToIso(task.completedDateTime) ?? new Date().toISOString() : undefined,
     remoteId: task.id,

@@ -155,6 +155,20 @@ async function pushDeletions(mode: Mode, listId: string, token: string): Promise
   }
 }
 
+// Bump when the meaning of title prefixes changes (v2: z_ daily, zz_ weekly, zzz_ monthly).
+const PREFIX_RULES_VERSION = '2'
+const PREFIX_RULES_KEY = (mode: Mode) => `arcade-sync-prefix-rules-${mode}`
+
+/** Forget when each task was last read so this sync re-reads every To Do title under the current prefix rules. */
+function rereadIfPrefixRulesChanged(mode: Mode): void {
+  if (localStorage.getItem(PREFIX_RULES_KEY(mode)) === PREFIX_RULES_VERSION) return
+  saveTodosRaw(
+    mode,
+    loadTodos(mode).map(t => (t.remoteId && !t.dirty ? { ...t, remoteModified: undefined } : t))
+  )
+  localStorage.setItem(PREFIX_RULES_KEY(mode), PREFIX_RULES_VERSION)
+}
+
 function applyRemote(mode: Mode, remote: GraphTask[]): void {
   const pendingDelete = new Set(loadDeleted(mode))
   const remoteById = new Map(remote.map(r => [r.id, r]))
@@ -203,7 +217,9 @@ async function syncOnce(): Promise<void> {
       const link = links[mode]!
       await pushDeletions(mode, link.listId, token)
       await pushTodos(mode, link.listId, token)
-      applyRemote(mode, await listTasks(token, link.listId))
+      const remote = await listTasks(token, link.listId)
+      rereadIfPrefixRulesChanged(mode)
+      applyRemote(mode, remote)
       const latest = loadLinks()
       if (latest[mode]?.listId === link.listId) {
         latest[mode] = { ...latest[mode]!, lastSync: new Date().toISOString() }

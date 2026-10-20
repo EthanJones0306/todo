@@ -1,53 +1,65 @@
-import { Todo } from '@/types'
+import { Category, Todo } from '@/types'
 
 /*
- * Microsoft To Do can only sort alphabetically, so priority is encoded as title prefixes:
+ * Microsoft To Do can only sort alphabetically, so priority and repeats are encoded as title prefixes:
  *   1_ 2_ 3_ …  ranked priority (1 is most important)
  *   H_          high priority
  *   L_          low priority
- *   zz_         daily task (sorts to the bottom)
- * Prefixes can be combined (e.g. "zz_1_Standup"). The app shows the title without them and
+ *   z_          daily task     ┐
+ *   zz_         weekly task    ├ sort to the bottom, in this order
+ *   zzz_        monthly task   ┘
+ * Prefixes can be combined (e.g. "z_1_Standup"). The app shows the title without them and
  * rebuilds them when writing back, so To Do's A–Z order matches the app's priority order.
  */
 
-const PREFIX = /^\s*(\d+|h|l|zz)_\s*/i
+const PREFIX = /^\s*(\d+|h|l|z{1,3})_\s*/i
 
 export type Priority = 'high' | 'low'
+export type RepeatPrefix = 'daily' | 'weekly' | 'monthly'
+
+const REPEAT_BY_Z: Record<number, RepeatPrefix> = { 1: 'daily', 2: 'weekly', 3: 'monthly' }
+const Z_BY_REPEAT: Record<RepeatPrefix, string> = { daily: 'z_', weekly: 'zz_', monthly: 'zzz_' }
+
+/** The repeat a task's category puts in its To Do title, if any. Custom repeats have no prefix. */
+export function repeatPrefixOf(category: Category): RepeatPrefix | undefined {
+  return category === 'daily' || category === 'weekly' || category === 'monthly' ? category : undefined
+}
 
 export interface ParsedTitle {
   text: string
   rank?: number
   priority?: Priority
-  daily: boolean
+  repeat?: RepeatPrefix
 }
 
 export function parseTitle(title: string): ParsedTitle {
   let rest = title
   let rank: number | undefined
   let priority: Priority | undefined
-  let daily = false
+  let repeat: RepeatPrefix | undefined
   let m: RegExpExecArray | null
   while ((m = PREFIX.exec(rest))) {
     const token = m[1].toLowerCase()
-    if (token === 'zz') daily = true
+    if (token.startsWith('z')) repeat ??= REPEAT_BY_Z[token.length]
     else if (token === 'h') priority ??= 'high'
     else if (token === 'l') priority ??= 'low'
     else rank ??= parseInt(token, 10)
     rest = rest.slice(m[0].length)
   }
   // A title that is nothing but prefixes keeps its original text.
-  if (!rest.trim()) return { text: title.trim(), daily: false }
-  return { text: rest.trim(), rank, priority, daily }
+  if (!rest.trim()) return { text: title.trim() }
+  return { text: rest.trim(), rank, priority, repeat }
 }
 
 export function composeTitle(todo: Pick<Todo, 'text' | 'rank' | 'priority' | 'category'>): string {
-  const daily = todo.category === 'daily' ? 'zz_' : ''
+  const repeat = repeatPrefixOf(todo.category)
+  const z = repeat ? Z_BY_REPEAT[repeat] : ''
   const rank = todo.rank ? `${todo.rank}_` : ''
   const level = todo.priority === 'high' ? 'H_' : todo.priority === 'low' ? 'L_' : ''
-  return `${daily}${rank}${level}${todo.text}`
+  return `${z}${rank}${level}${todo.text}`
 }
 
-/** Apply any prefixes typed into a task name (e.g. "H_Call bank") to the task's fields. */
+/** Apply any prefixes typed into a task name (e.g. "H_Call bank", "z_Standup") to the task's fields. */
 export function withParsedTitle<T extends Todo>(todo: T): T {
   if (!PREFIX.test(todo.text)) return todo
   const p = parseTitle(todo.text)
@@ -56,21 +68,24 @@ export function withParsedTitle<T extends Todo>(todo: T): T {
     text: p.text,
     rank: p.rank ?? todo.rank,
     priority: p.priority ?? todo.priority,
-    category: p.daily ? 'daily' : todo.category,
+    category: p.repeat ?? todo.category,
+    recurrenceDays: p.repeat ? undefined : todo.recurrenceDays,
   }
+}
+
+/** 0 for one-off/custom tasks, then 1 daily, 2 weekly, 3 monthly — their order at the bottom of To Do. */
+function repeatGroup(t: Todo): number {
+  const r = repeatPrefixOf(t.category)
+  return r === 'daily' ? 1 : r === 'weekly' ? 2 : r === 'monthly' ? 3 : 0
 }
 
 /**
  * Sort key for priority order: ranked tasks first (1, 2, 3…), then high, normal and low,
- * with daily tasks last — the same order To Do shows from the prefixes.
+ * with daily, weekly and monthly tasks after — the same order To Do shows from the prefixes.
  */
 export function priorityCompare(a: Todo, b: Todo): number {
-  const group = (t: Todo) => (t.rank ? 0 : t.priority === 'high' ? 1 : t.priority === 'low' ? 3 : 2)
-  return (
-    Number(a.category === 'daily') - Number(b.category === 'daily') ||
-    group(a) - group(b) ||
-    (a.rank ?? 0) - (b.rank ?? 0)
-  )
+  const level = (t: Todo) => (t.rank ? 0 : t.priority === 'high' ? 1 : t.priority === 'low' ? 3 : 2)
+  return repeatGroup(a) - repeatGroup(b) || level(a) - level(b) || (a.rank ?? 0) - (b.rank ?? 0)
 }
 
 export function priorityLabel(todo: Pick<Todo, 'rank' | 'priority'>): string | null {
@@ -84,7 +99,8 @@ export function priorityLabel(todo: Pick<Todo, 'rank' | 'priority'>): string | n
  * Drag-and-drop in priority order: move `movedId` to where `targetId` sits and re-derive priorities.
  * The moved task takes the target's level (ranked, high, normal or low), and every ranked task is
  * renumbered 1, 2, 3… in its new position, so the To Do title prefixes keep the same order.
- * Daily (zz_) tasks are ordered separately; dropping across that boundary does nothing.
+ * Daily, weekly and monthly (z_/zz_/zzz_) tasks are each ordered separately; dropping across
+ * those boundaries does nothing.
  * Ranks are numbered across the whole workspace, not just the visible list, so filtered views stay
  * consistent with To Do. Returns the original array when nothing changes.
  */
@@ -92,10 +108,10 @@ export function reprioritise(todos: Todo[], movedId: string, targetId: string): 
   const moved = todos.find(t => t.id === movedId)
   const target = todos.find(t => t.id === targetId)
   if (!moved || !target || moved === target || moved.done || target.done) return todos
-  const daily = moved.category === 'daily'
-  if ((target.category === 'daily') !== daily) return todos
+  const group = repeatGroup(moved)
+  if (repeatGroup(target) !== group) return todos
 
-  const inGroup = (t: Todo) => !t.done && (t.category === 'daily') === daily
+  const inGroup = (t: Todo) => !t.done && repeatGroup(t) === group
   const ordered = todos.filter(inGroup).sort(priorityCompare)
   const movingDown = ordered.indexOf(moved) < ordered.indexOf(target)
 
@@ -118,5 +134,5 @@ export function reprioritise(todos: Todo[], movedId: string, targetId: string): 
 }
 
 export function canReprioritise(moved: Todo | undefined, target: Todo | undefined): boolean {
-  return !!moved && !!target && moved !== target && !target.done && (moved.category === 'daily') === (target.category === 'daily')
+  return !!moved && !!target && moved !== target && !target.done && repeatGroup(moved) === repeatGroup(target)
 }
