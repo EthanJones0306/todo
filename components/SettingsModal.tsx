@@ -91,13 +91,15 @@ export default function SettingsModal({ initialTab = 'appearance', settings, onC
     }
   }
 
-  const completedCount = loadTodos(mode).filter(t => t.done).length
+  // Daily tasks reset each day rather than being cleared.
+  const isClearable = (t: { done: boolean; category: string }) => t.done && t.category !== 'daily'
+  const completedCount = loadTodos(mode).filter(isClearable).length
 
   const runConfirm = () => {
     if (confirm === 'clear') {
       const all = loadTodos(mode)
-      markDeleted(mode, all.filter(t => t.done))
-      saveTodos(mode, all.filter(t => !t.done))
+      markDeleted(mode, all.filter(isClearable))
+      saveTodos(mode, all.filter(t => !isClearable(t)))
       onDataChanged()
       flash('Completed tasks cleared')
     } else if (confirm === 'reset') {

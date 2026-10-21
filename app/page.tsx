@@ -5,14 +5,14 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Category, CATEGORY_LABEL, CATEGORY_ORDER, DAY_LABELS, Mode, RecurrenceDays, Todo } from '@/types'
 import { createProjectFromTodo, loadProjects } from '@/lib/storage'
-import { DATA_CHANGE_EVENT, loadMode, loadTodos, markDeleted, saveMode, saveTodos, shouldShowToday, getNextDueDate } from '@/lib/todos'
+import { DATA_CHANGE_EVENT, loadMode, loadTodos, markDeleted, resetDailyTasks, saveMode, saveTodos, shouldShowToday, getNextDueDate } from '@/lib/todos'
 import { addDays, formatLongToday, formatRelativeDate, getTodayString, greeting, isDueToday, isOverdue } from '@/lib/date'
 import { Settings, useSettings } from '@/lib/settings'
 import { canReprioritise, Priority, priorityCompare, priorityLabel, reprioritise, withParsedTitle } from '@/lib/priority'
 import AppShell, { isTypingTarget } from '@/components/AppShell'
 import { ALL_VIEWS, View, VIEW_LABEL } from '@/components/Sidebar'
 import Icon from '@/components/Icon'
-import { ConfirmDialog, Kbd, Menu, MenuItem, MenuLabel, MenuSeparator, ProgressRing, Toast, ToastData } from '@/components/ui'
+import { ConfirmDialog, Kbd, Menu, MenuItem, MenuLabel, MenuSeparator, Toast, ToastData } from '@/components/ui'
 
 const REPEAT_LABEL: Record<Category, string> = { ...CATEGORY_LABEL, custom: 'Custom days' }
 
@@ -66,7 +66,7 @@ export default function Home() {
   useEffect(() => {
     const m = loadMode()
     setMode(m)
-    setTodos(loadTodos(m))
+    setTodos(resetDailyTasks(loadTodos(m)))
     const param = new URLSearchParams(window.location.search).get('view') as View | null
     if (param && ALL_VIEWS.includes(param)) setView(param)
     setMounted(true)
@@ -80,9 +80,23 @@ export default function Home() {
   const modeRef = useRef(mode)
   modeRef.current = mode
   useEffect(() => {
-    const reload = () => setTodos(loadTodos(modeRef.current))
+    const reload = () => setTodos(resetDailyTasks(loadTodos(modeRef.current)))
     window.addEventListener(DATA_CHANGE_EVENT, reload)
     return () => window.removeEventListener(DATA_CHANGE_EVENT, reload)
+  }, [])
+
+  // A new day un-ticks yesterday's daily tasks — checked when the app is opened, refocused, or left open past midnight.
+  useEffect(() => {
+    const check = () => setTodos(prev => resetDailyTasks(prev))
+    const onVisible = () => document.visibilityState === 'visible' && check()
+    const tick = setInterval(check, 60000)
+    window.addEventListener('focus', check)
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      clearInterval(tick)
+      window.removeEventListener('focus', check)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [])
 
   useEffect(() => {
@@ -102,7 +116,7 @@ export default function Home() {
     if (next === mode) return
     saveMode(next)
     setMode(next)
-    setTodos(loadTodos(next))
+    setTodos(resetDailyTasks(loadTodos(next)))
     setEditingId(null)
   }
 
@@ -260,7 +274,7 @@ export default function Home() {
   }
 
   const clearCompleted = () => {
-    const removed = todos.filter(t => t.done && matchesView(t, view))
+    const removed = todos.filter(t => t.done && t.category !== 'daily' && matchesView(t, view))
     const ids = new Set(removed.map(t => t.id))
     const before = todos
     markDeleted(mode, removed)
@@ -306,6 +320,7 @@ export default function Home() {
   const activeTodos = sortTodos(inView.filter(t => !t.done), view === 'upcoming' ? 'due' : settings.sort)
   const completedTodos = inView.filter(t => t.done).sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? ''))
   const overdueCount = activeTodos.filter(t => isOverdue(t.dueDate)).length
+  const clearableCount = completedTodos.filter(t => t.category !== 'daily').length
   const viewTotal = activeTodos.length + completedTodos.length
   const progress = viewTotal ? completedTodos.length / viewTotal : 0
   const prioritySort = settings.sort === 'priority' && view !== 'upcoming'
@@ -453,15 +468,14 @@ export default function Home() {
             <h1 className="page-title">{title}</h1>
             <p className="page-subtitle">{mounted ? subtitle : ' '}</p>
           </div>
-          {viewTotal > 0 && (
-            <div className="progress-card" title={`${completedTodos.length} of ${viewTotal} done`}>
-              <ProgressRing value={progress} size={44} stroke={4} />
-              <div>
-                <div className="progress-value">{Math.round(progress * 100)}%</div>
-                <div className="progress-label">
-                  {completedTodos.length} of {viewTotal} done
-                </div>
+          {view === 'daily' && viewTotal > 0 && (
+            <div className="daily-progress" title="Daily tasks reset each morning">
+              <div className="daily-progress-bar" aria-hidden="true">
+                <span style={{ width: `${progress * 100}%` }} />
               </div>
+              <span>
+                {completedTodos.length} of {viewTotal} done today
+              </span>
             </div>
           )}
         </header>
@@ -662,9 +676,11 @@ export default function Home() {
                     Completed
                     <span className="group-count">{completedTodos.length}</span>
                   </button>
-                  <button className="text-btn" onClick={() => setConfirm({ kind: 'clear' })}>
-                    Clear
-                  </button>
+                  {clearableCount > 0 && (
+                    <button className="text-btn" onClick={() => setConfirm({ kind: 'clear' })}>
+                      Clear
+                    </button>
+                  )}
                 </div>
                 {completedOpen && <div className="task-list">{completedTodos.map(renderTask)}</div>}
               </section>
@@ -692,7 +708,7 @@ export default function Home() {
         <ConfirmDialog
           danger
           title="Clear completed tasks?"
-          body={`${completedTodos.length} completed task${completedTodos.length === 1 ? '' : 's'} in ${VIEW_LABEL[view]} will be removed. You can undo right after.`}
+          body={`${clearableCount} completed task${clearableCount === 1 ? '' : 's'} in ${VIEW_LABEL[view]} will be removed. Daily tasks are kept — they reset tomorrow. You can undo right after.`}
           confirmLabel="Clear"
           onCancel={() => setConfirm(null)}
           onConfirm={() => {

@@ -110,6 +110,21 @@ export function shouldShowToday(dueDate?: string, recurrenceDays?: RecurrenceDay
   return recurrenceDays.includes(parseDate(today).getDay())
 }
 
+/**
+ * Daily tasks ticked off on an earlier day come back unticked, so each day starts fresh.
+ * Returns the same array when nothing needs resetting.
+ */
+export function resetDailyTasks(todos: Todo[], today = getTodayString()): Todo[] {
+  let changed = false
+  const next = todos.map(t => {
+    if (t.category !== 'daily' || !t.done || !t.completedAt) return t
+    if (toDateString(new Date(t.completedAt)) >= today) return t
+    changed = true
+    return { ...t, done: false, completedAt: undefined }
+  })
+  return changed ? next : todos
+}
+
 export function getNextDueDate(currentDueDate: string | undefined, recurrenceDays: RecurrenceDays): string {
   let date = addDays(currentDueDate || getTodayString(), 1)
   for (let i = 0; i < 7; i++) {
