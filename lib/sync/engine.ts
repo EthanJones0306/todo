@@ -6,6 +6,7 @@ import { DATA_CHANGE_EVENT, loadDeleted, syncKey, loadTodos, saveDeleted, saveTo
 import { getAccount, getToken, ReauthRequired } from '@/lib/sync/msal'
 import { createTask, deleteTask, GraphError, GraphTask, listTasks, updateTask } from '@/lib/sync/graph'
 import { newTaskFromGraph, syncedFieldsFromGraph, toGraphTask } from '@/lib/sync/mapping'
+import { parseTitle, repeatPrefixOf } from '@/lib/priority'
 
 /* ---------- Linked lists ---------- */
 
@@ -155,16 +156,31 @@ async function pushDeletions(mode: Mode, listId: string, token: string): Promise
   }
 }
 
-// Bump when the meaning of title prefixes changes (v2: z_ daily, zz_ weekly, zzz_ monthly).
-const PREFIX_RULES_VERSION = '2'
+// Bump when the meaning of title prefixes changes, or the re-read itself is fixed.
+// v2: z_ daily, zz_ weekly, zzz_ monthly. v3: re-read before pushing, and for tasks with pending edits too.
+const PREFIX_RULES_VERSION = '3'
 const PREFIX_RULES_KEY = (mode: Mode) => `arcade-sync-prefix-rules-${mode}`
 
-/** Forget when each task was last read so this sync re-reads every To Do title under the current prefix rules. */
-function rereadIfPrefixRulesChanged(mode: Mode): void {
-  if (localStorage.getItem(PREFIX_RULES_KEY(mode)) === PREFIX_RULES_VERSION) return
+function prefixRulesOutdated(mode: Mode): boolean {
+  return localStorage.getItem(PREFIX_RULES_KEY(mode)) !== PREFIX_RULES_VERSION
+}
+
+/**
+ * Re-read the repeat (daily/weekly/monthly) of every synced task from its To Do title under the current
+ * prefix rules. Runs before anything is pushed, so a task whose repeat was mis-read earlier can't be
+ * written back to To Do with the wrong prefix. Tasks without pending edits are fully re-read afterwards.
+ */
+function rereadPrefixRules(mode: Mode, remote: GraphTask[]): void {
+  const byId = new Map(remote.map(r => [r.id, r]))
   saveTodosRaw(
     mode,
-    loadTodos(mode).map(t => (t.remoteId && !t.dirty ? { ...t, remoteModified: undefined } : t))
+    loadTodos(mode).map(t => {
+      const r = t.remoteId ? byId.get(t.remoteId) : undefined
+      if (!r) return t
+      const repeat = parseTitle(r.title).repeat
+      const category = repeat ?? (repeatPrefixOf(t.category) ? 'once' : t.category)
+      return { ...t, category, recurrenceDays: repeat ? undefined : t.recurrenceDays, remoteModified: t.dirty ? t.remoteModified : undefined }
+    })
   )
   localStorage.setItem(PREFIX_RULES_KEY(mode), PREFIX_RULES_VERSION)
 }
@@ -215,10 +231,10 @@ async function syncOnce(): Promise<void> {
     const token = await getToken()
     for (const mode of modes) {
       const link = links[mode]!
+      if (prefixRulesOutdated(mode)) rereadPrefixRules(mode, await listTasks(token, link.listId))
       await pushDeletions(mode, link.listId, token)
       await pushTodos(mode, link.listId, token)
       const remote = await listTasks(token, link.listId)
-      rereadIfPrefixRulesChanged(mode)
       applyRemote(mode, remote)
       const latest = loadLinks()
       if (latest[mode]?.listId === link.listId) {
