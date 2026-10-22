@@ -2,7 +2,7 @@
 
 import { Mode, MODE_ORDER, Todo } from '@/types'
 import { loadProjects, saveProjects } from '@/lib/storage'
-import { DATA_CHANGE_EVENT, loadDeleted, syncKey, loadTodos, saveDeleted, saveTodosRaw } from '@/lib/todos'
+import { DATA_CHANGE_EVENT, loadDeleted, resetDailyTasks, saveTodos, syncKey, loadTodos, saveDeleted, saveTodosRaw } from '@/lib/todos'
 import { getAccount, getToken, ReauthRequired } from '@/lib/sync/msal'
 import { createTask, deleteTask, GraphError, GraphTask, listTasks, updateTask } from '@/lib/sync/graph'
 import { newTaskFromGraph, syncedFieldsFromGraph, toGraphTask } from '@/lib/sync/mapping'
@@ -185,6 +185,15 @@ function rereadPrefixRules(mode: Mode, remote: GraphTask[]): void {
   localStorage.setItem(PREFIX_RULES_KEY(mode), PREFIX_RULES_VERSION)
 }
 
+/** Un-tick daily tasks completed before today (marked as changes to send). Returns whether any were reset. */
+function resetStaleDailyTasks(mode: Mode): boolean {
+  const todos = loadTodos(mode)
+  const reset = resetDailyTasks(todos)
+  if (reset === todos) return false
+  saveTodos(mode, reset)
+  return true
+}
+
 function applyRemote(mode: Mode, remote: GraphTask[]): void {
   const pendingDelete = new Set(loadDeleted(mode))
   const remoteById = new Map(remote.map(r => [r.id, r]))
@@ -232,10 +241,13 @@ async function syncOnce(): Promise<void> {
     for (const mode of modes) {
       const link = links[mode]!
       if (prefixRulesOutdated(mode)) rereadPrefixRules(mode, await listTasks(token, link.listId))
+      resetStaleDailyTasks(mode)
       await pushDeletions(mode, link.listId, token)
       await pushTodos(mode, link.listId, token)
-      const remote = await listTasks(token, link.listId)
-      applyRemote(mode, remote)
+      applyRemote(mode, await listTasks(token, link.listId))
+      // Daily tasks ticked off in To Do on an earlier day come back done; reset and un-tick them now,
+      // so a single sync leaves both sides fresh for today.
+      if (resetStaleDailyTasks(mode)) await pushTodos(mode, link.listId, token)
       const latest = loadLinks()
       if (latest[mode]?.listId === link.listId) {
         latest[mode] = { ...latest[mode]!, lastSync: new Date().toISOString() }
