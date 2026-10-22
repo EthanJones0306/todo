@@ -2258,6 +2258,53 @@ html[data-theme='crt'] .switch-thumb {
   color: var(--text-3);
 }
 
+.repair-empty {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  padding: 4px 0 12px;
+}
+.repair-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  padding: 4px 0 8px;
+}
+.repair-head span {
+  margin-right: auto;
+}
+.repair-list {
+  list-style: none;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 12px;
+}
+.repair-list li + li {
+  border-top: 1px solid var(--border);
+}
+.repair-list label {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.repair-list input {
+  grid-row: span 2;
+  margin-top: 3px;
+  accent-color: var(--accent);
+}
+.repair-text {
+  font-size: 0.875rem;
+}
+.repair-meta {
+  font-size: 0.75rem;
+  color: var(--text-3);
+}
+
 /* ---------- Toast ---------- */
 .toast {
   position: fixed;

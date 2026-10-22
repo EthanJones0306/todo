@@ -5,8 +5,19 @@ import type { AccountInfo } from '@azure/msal-browser'
 import { Mode, MODE_LABEL, MODE_ORDER } from '@/types'
 import { getAccount, getMsConfig, getToken, MsConfig, redirectUri as getRedirectUri, saveMsConfig, signIn, signOut } from '@/lib/sync/msal'
 import { createList, GraphList, listLists } from '@/lib/sync/graph'
-import { forgetSyncedData, hasPendingChanges, loadLinks, requestSync, setLink, STATUS_EVENT } from '@/lib/sync/engine'
+import {
+  findReopenedCandidates,
+  forgetSyncedData,
+  hasPendingChanges,
+  loadLinks,
+  markRemoteCompleted,
+  ReopenedCandidate,
+  requestSync,
+  setLink,
+  STATUS_EVENT,
+} from '@/lib/sync/engine'
 import { formatAgo, useSyncStatus } from '@/lib/sync/useSync'
+import { formatRelativeDate } from '@/lib/date'
 import Icon from '@/components/Icon'
 import { Switch } from '@/components/ui'
 import { useSettings } from '@/lib/settings'
@@ -261,6 +272,8 @@ export default function SyncSettings({ onDataChanged }: { onDataChanged: () => v
         </>
       )}
 
+      {account && (links.personal || links.work) && <ReopenedRepair onDone={onDataChanged} />}
+
       {(error || status.error) && (
         <div className="sync-error" role="alert">
           <Icon name="alert" size={14} />
@@ -268,5 +281,109 @@ export default function SyncSettings({ onDataChanged }: { onDataChanged: () => v
         </div>
       )}
     </section>
+  )
+}
+
+/** Review list for tasks the old daily reset (21–22 Oct 2026) re-opened in To Do. Nothing changes until confirmed. */
+function ReopenedRepair({ onDone }: { onDone: () => void }) {
+  const [items, setItems] = useState<ReopenedCandidate[] | null>(null)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+
+  const check = async () => {
+    setBusy(true)
+    setMessage(null)
+    try {
+      const found = await findReopenedCandidates()
+      setItems(found)
+      setSelected(new Set(found.filter(f => f.likely).map(f => f.remoteId)))
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const apply = async () => {
+    if (!items) return
+    setBusy(true)
+    try {
+      const n = await markRemoteCompleted(items.filter(i => selected.has(i.remoteId)))
+      setItems(items.filter(i => !selected.has(i.remoteId)))
+      setSelected(new Set())
+      setMessage(`Marked ${n} task${n === 1 ? '' : 's'} as completed again.`)
+      onDone()
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const toggle = (id: string) =>
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+
+  return (
+    <div className="repair">
+      <div className="settings-row">
+        <div>
+          <div className="settings-row-label">Fix tasks re-opened by sync</div>
+          <div className="settings-row-hint">
+            A bug on 21–22 Oct could un-tick old completed daily/weekly tasks in To Do. Check, review, then choose which
+            to mark completed again.
+          </div>
+        </div>
+        <div className="settings-row-control">
+          <button className="btn btn-secondary btn-sm" onClick={check} disabled={busy}>
+            {busy && !items ? 'Checking…' : items ? 'Check again' : 'Check'}
+          </button>
+        </div>
+      </div>
+
+      {items && items.length === 0 && <p className="repair-empty">Nothing found — no tasks look re-opened.</p>}
+
+      {items && items.length > 0 && (
+        <>
+          <div className="repair-head">
+            <span>
+              {items.length} open task{items.length === 1 ? '' : 's'} could have been re-opened · {selected.size} selected
+            </span>
+            <button className="text-btn" onClick={() => setSelected(new Set(items.map(i => i.remoteId)))}>
+              Select all
+            </button>
+            <button className="text-btn" onClick={() => setSelected(new Set())}>
+              Select none
+            </button>
+          </div>
+          <ul className="repair-list">
+            {items.map(i => (
+              <li key={i.remoteId}>
+                <label>
+                  <input type="checkbox" checked={selected.has(i.remoteId)} onChange={() => toggle(i.remoteId)} />
+                  <span className="repair-text">{i.text}</span>
+                  <span className="repair-meta">
+                    {i.due ? `Due ${formatRelativeDate(i.due)}` : i.created ? `Created ${formatRelativeDate(i.created)}` : ''} ·{' '}
+                    {i.reason}
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+          <div className="row-end">
+            <button className="btn btn-primary btn-sm" onClick={apply} disabled={busy || selected.size === 0}>
+              {busy ? 'Updating…' : `Mark ${selected.size} as completed`}
+            </button>
+          </div>
+        </>
+      )}
+
+      {message && <p className="repair-empty">{message}</p>}
+    </div>
   )
 }

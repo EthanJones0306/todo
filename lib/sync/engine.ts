@@ -318,6 +318,85 @@ function applyRemote(mode: Mode, remote: GraphTask[]): void {
   saveTodosRaw(mode, todos)
 }
 
+/* ---------- Repair: tasks the old daily reset re-opened ---------- */
+
+// The daily reset that could re-open completed To Do tasks shipped on 21 Oct 2026 and was fixed on 22 Oct.
+const RESET_SHIPPED = '2026-10-21T00:00:00Z'
+
+export interface ReopenedCandidate {
+  mode: Mode
+  remoteId: string
+  text: string
+  due?: string
+  created?: string
+  /** Pre-selected: To Do still records a completion date for it */
+  likely: boolean
+  reason: string
+}
+
+/**
+ * Open To Do tasks the old daily reset may have re-opened: repeat-prefixed (z_/zz_/zzz_) tasks, open, not
+ * the copy carrying a To Do series forward, and changed since the reset shipped. Only these could have been
+ * touched by it. Nothing is changed here; the person reviews the list first.
+ */
+export async function findReopenedCandidates(): Promise<ReopenedCandidate[]> {
+  const token = await getToken()
+  const links = loadLinks()
+  const today = getTodayString()
+  const found: ReopenedCandidate[] = []
+  for (const mode of MODE_ORDER) {
+    const link = links[mode]
+    if (!link) continue
+    for (const r of await listTasks(token, link.listId)) {
+      const parsed = parseTitle(r.title)
+      if (r.status === 'completed' || r.recurrence || !parsed.repeat || r.lastModifiedDateTime < RESET_SHIPPED) continue
+      const due = utcDate(r.dueDateTime)
+      const created = r.createdDateTime ? toDateString(new Date(r.createdDateTime)) : undefined
+      const hadCompletion = !!r.completedDateTime?.dateTime
+      const old = due ? due < today : !!created && created < '2026-10-21'
+      if (!hadCompletion && !old) continue
+      found.push({
+        mode,
+        remoteId: r.id,
+        text: parsed.text,
+        due,
+        created,
+        likely: hadCompletion,
+        reason: hadCompletion ? 'To Do still has a completion date' : due ? 'Old copy, due before today' : 'Created before 21 Oct',
+      })
+    }
+  }
+  return found.sort((a, b) => (a.due ?? a.created ?? '').localeCompare(b.due ?? b.created ?? ''))
+}
+
+/** Tick the chosen tasks off again in To Do and here. Returns how many were updated. */
+export async function markRemoteCompleted(items: { mode: Mode; remoteId: string }[]): Promise<number> {
+  const token = await getToken()
+  const links = loadLinks()
+  let done = 0
+  for (const { mode, remoteId } of items) {
+    const link = links[mode]
+    if (!link) continue
+    try {
+      // These copies carry no recurrence, so completing them can't make To Do create another copy.
+      const updated = await updateTask(token, link.listId, remoteId, { status: 'completed' })
+      saveTodosRaw(
+        mode,
+        loadTodos(mode).map(t =>
+          t.remoteId === remoteId
+            ? { ...t, done: true, completedAt: new Date().toISOString(), dirty: false, remoteModified: updated.lastModifiedDateTime }
+            : t
+        )
+      )
+      done++
+    } catch (e) {
+      if (!(e instanceof GraphError && e.status === 404)) throw e
+    }
+  }
+  window.dispatchEvent(new Event(DATA_CHANGE_EVENT))
+  return done
+}
+
 let running: Promise<void> | null = null
 let rerun = false
 

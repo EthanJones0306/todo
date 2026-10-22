@@ -25,6 +25,11 @@ export interface Todo {
    * so the app must never un-tick it on a new day.
    */
   remoteSeries?: boolean
+  /**
+   * Created in this app (rather than pulled from To Do). Only these synced tasks are reset each
+   * morning; tasks from To Do keep To Do's state, including its completed history.
+   */
+  createdHere?: boolean
   /** Microsoft To Do task id when this workspace is synced */
   remoteId?: string
   /** lastModifiedDateTime of the remote task when we last synced it */

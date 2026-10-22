@@ -20,6 +20,7 @@ export interface GraphTask {
   /** Set when To Do repeats the task itself (completing it makes To Do create the next copy) */
   recurrence?: unknown | null
   lastModifiedDateTime: string
+  createdDateTime?: string
 }
 
 export interface GraphList {

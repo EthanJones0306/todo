@@ -134,6 +134,7 @@ export default function Home() {
       id: crypto.randomUUID(),
       text,
       done: false,
+      createdHere: true,
       category: newCategory,
       dueDate,
       recurrenceDays: newCategory === 'custom' && newRecurrenceDays.length > 0 ? newRecurrenceDays : undefined,
@@ -160,6 +161,7 @@ export default function Home() {
         const nextTodo: Todo = {
           ...todo,
           id: crypto.randomUUID(),
+          createdHere: true,
           done: false,
           dueDate: getNextDueDate(todo.dueDate, todo.recurrenceDays),
           completedAt: undefined,
@@ -197,6 +199,8 @@ export default function Home() {
     const copy: Todo = {
       ...todo,
       id: crypto.randomUUID(),
+      createdHere: true,
+      remoteSeries: undefined,
       done: false,
       completedAt: undefined,
       isProject: false,
