@@ -37,7 +37,7 @@ export const DEFAULT_SETTINGS: Settings = {
   confirmDelete: false,
   weekStartsOn: 1,
   sidebarCollapsed: false,
-  autoSync: false,
+  autoSync: true,
 }
 
 const CHANGE_EVENT = 'arcade-settings-change'
@@ -54,6 +54,11 @@ export function loadSettings(): Settings {
   if (!(stored as { prioritySortSet?: boolean }).prioritySortSet) {
     stored.sort = 'priority'
     localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...stored, prioritySortSet: true }))
+  }
+  // One-time switch to automatic sync when it became the default (2026-10-22).
+  if (!(stored as { autoSyncSet?: boolean }).autoSyncSet) {
+    stored.autoSync = true
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...stored, prioritySortSet: true, autoSyncSet: true }))
   }
   return { ...DEFAULT_SETTINGS, ...stored, ...(theme ? { theme } : {}) }
 }
@@ -73,7 +78,7 @@ export function applySettingsToDocument(s: Settings): void {
 }
 
 export function saveSettings(s: Settings): void {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...s, prioritySortSet: true }))
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...s, prioritySortSet: true, autoSyncSet: true }))
   localStorage.setItem(THEME_KEY, s.theme)
   applySettingsToDocument(s)
   window.dispatchEvent(new Event(CHANGE_EVENT))
