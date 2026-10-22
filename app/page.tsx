@@ -24,6 +24,9 @@ function matchesView(t: Todo, view: View): boolean {
   if (view === 'today') return shouldShowToday(t.dueDate, t.recurrenceDays)
   if (view === 'upcoming') return !!t.dueDate && t.dueDate > getTodayString()
   if (view === 'all') return true
+  // Daily is today's list: copies due on a later day (e.g. To Do's next copy) wait until their day.
+  // Overdue ones stay, since To Do only creates the next copy once one is ticked off.
+  if (view === 'daily') return t.category === 'daily' && !(t.dueDate && t.dueDate > getTodayString())
   return t.category === view
 }
 
@@ -54,7 +57,10 @@ export default function Home() {
   const [editText, setEditText] = useState('')
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [dragOverId, setDragOverId] = useState<string | null>(null)
-  const [completedOpen, setCompletedOpen] = useState(true)
+  const [completedOpenByView, setCompletedOpenByView] = useState<Partial<Record<View, boolean>>>({})
+  // Done tasks leave the Daily list for the day (folded away); other lists show them open.
+  const completedOpen = completedOpenByView[view] ?? view !== 'daily'
+  const setCompletedOpen = (fn: (open: boolean) => boolean) => setCompletedOpenByView(prev => ({ ...prev, [view]: fn(completedOpen) }))
   const [justCompleted, setJustCompleted] = useState<string | null>(null)
   const [toast, setToast] = useState<ToastData | null>(null)
   const [confirm, setConfirm] = useState<null | { kind: 'delete'; todo: Todo } | { kind: 'clear' }>(null)
