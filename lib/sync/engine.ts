@@ -4,7 +4,8 @@ import { Mode, MODE_ORDER, Todo } from '@/types'
 import { loadProjects, saveProjects } from '@/lib/storage'
 import { DATA_CHANGE_EVENT, loadDeleted, resetDailyTasks, saveTodos, syncKey, loadTodos, saveDeleted, saveTodosRaw } from '@/lib/todos'
 import { getAccount, getToken, ReauthRequired } from '@/lib/sync/msal'
-import { createTask, deleteTask, GraphError, GraphTask, listTasks, updateTask } from '@/lib/sync/graph'
+import { createTask, deleteTask, GraphDateTime, GraphError, GraphTask, listTasks, updateTask } from '@/lib/sync/graph'
+import { getTodayString, toDateString } from '@/lib/date'
 import { newTaskFromGraph, syncedFieldsFromGraph, toGraphTask } from '@/lib/sync/mapping'
 import { parseTitle, repeatPrefixOf } from '@/lib/priority'
 
@@ -118,9 +119,12 @@ function patchStoredTodo(mode: Mode, id: string, patch: (t: Todo) => Partial<Tod
 // Only the title (with priority prefixes) and done state go to To Do; everything else stays here.
 const contentKey = syncKey
 
-async function pushTodos(mode: Mode, listId: string, token: string): Promise<void> {
+/** Sends new and changed tasks; returns how many writes were made. */
+async function pushTodos(mode: Mode, listId: string, token: string): Promise<number> {
+  let writes = 0
   for (const todo of loadTodos(mode)) {
     if (todo.remoteId && !todo.dirty) continue
+    writes++
     const key = contentKey(todo)
     let remote: GraphTask
     const body = toGraphTask(todo)
@@ -140,10 +144,12 @@ async function pushTodos(mode: Mode, listId: string, token: string): Promise<voi
       dirty: contentKey(current) !== key,
     }))
   }
+  return writes
 }
 
-async function pushDeletions(mode: Mode, listId: string, token: string): Promise<void> {
-  for (const id of loadDeleted(mode)) {
+async function pushDeletions(mode: Mode, listId: string, token: string): Promise<number> {
+  const ids = loadDeleted(mode)
+  for (const id of ids) {
     try {
       await deleteTask(token, listId, id)
     } catch (e) {
@@ -154,6 +160,7 @@ async function pushDeletions(mode: Mode, listId: string, token: string): Promise
       loadDeleted(mode).filter(x => x !== id)
     )
   }
+  return ids.length
 }
 
 // Bump when the meaning of title prefixes changes, or the re-read itself is fixed.
@@ -194,6 +201,91 @@ function resetStaleDailyTasks(mode: Mode): boolean {
   return true
 }
 
+/* ---------- Series To Do repeats itself ---------- */
+
+function utcDate(value?: GraphDateTime | null): string | undefined {
+  return value?.dateTime ? toDateString(new Date(value.dateTime.slice(0, 19) + 'Z')) : undefined
+}
+
+/** Titles of tasks To Do repeats itself: any copy carrying a recurrence marks the whole series. */
+function seriesTitles(remote: GraphTask[]): Set<string> {
+  return new Set(remote.filter(r => r.recurrence).map(r => r.title))
+}
+
+/**
+ * Flag local tasks that belong to a series To Do repeats itself (the flag sticks, since completed copies
+ * lose their recurrence). A copy To Do has as completed but the app un-ticked with its daily reset is
+ * ticked again, so it isn't sent back as not done.
+ */
+function markSeries(mode: Mode, remote: GraphTask[]): void {
+  const titles = seriesTitles(remote)
+  const byId = new Map(remote.map(r => [r.id, r]))
+  const todos = loadTodos(mode)
+  let changed = false
+  const next = todos.map(t => {
+    const r = t.remoteId ? byId.get(t.remoteId) : undefined
+    if (!r || !(t.remoteSeries || titles.has(r.title))) return t
+    if (!t.done && t.dirty && r.status === 'completed') {
+      changed = true
+      return { ...t, remoteSeries: true, done: true, completedAt: new Date(`${utcDate(r.completedDateTime) ?? getTodayString()}T12:00:00`).toISOString(), dirty: false }
+    }
+    if (t.remoteSeries) return t
+    changed = true
+    return { ...t, remoteSeries: true }
+  })
+  if (changed) saveTodosRaw(mode, next)
+}
+
+const SERIES_CLEANUP_KEY = (mode: Mode) => `arcade-sync-series-cleanup-${mode}`
+
+/**
+ * One-off repair (Oct 2026): the daily reset used to un-tick completed copies of tasks To Do repeats itself,
+ * leaving yesterday's copies open next to To Do's new ones. In each daily series, open copies due before
+ * today that aren't the newest are ticked off again. Their recurrence is removed first so To Do doesn't
+ * create yet another copy; if that fails, the copy is left alone.
+ */
+async function cleanUpResetSeriesCopies(mode: Mode, remote: GraphTask[], listId: string, token: string): Promise<number> {
+  if (localStorage.getItem(SERIES_CLEANUP_KEY(mode))) return 0
+  const today = getTodayString()
+  const dailyRemoteIds = new Set(loadTodos(mode).filter(t => t.category === 'daily' && t.remoteId).map(t => t.remoteId!))
+  const titles = seriesTitles(remote)
+  const groups = new Map<string, GraphTask[]>()
+  for (const r of remote) {
+    const daily = dailyRemoteIds.has(r.id) || parseTitle(r.title).repeat === 'daily'
+    if (r.status === 'completed' || !titles.has(r.title) || !daily || !utcDate(r.dueDateTime)) continue
+    groups.set(r.title, [...(groups.get(r.title) ?? []), r])
+  }
+
+  const fixed = new Set<string>()
+  for (const open of Array.from(groups.values())) {
+    if (open.length < 2) continue
+    const newest = open.reduce((a, b) => (utcDate(a.dueDateTime)! >= utcDate(b.dueDateTime)! ? a : b))
+    for (const r of open) {
+      if (r === newest || utcDate(r.dueDateTime)! >= today) continue
+      try {
+        if (r.recurrence) await updateTask(token, listId, r.id, { recurrence: null })
+        await updateTask(token, listId, r.id, { status: 'completed' })
+        fixed.add(r.id)
+      } catch (e) {
+        if (!(e instanceof GraphError)) throw e
+      }
+    }
+  }
+
+  if (fixed.size) {
+    saveTodosRaw(
+      mode,
+      loadTodos(mode).map(t =>
+        t.remoteId && fixed.has(t.remoteId)
+          ? { ...t, done: true, completedAt: new Date().toISOString(), remoteSeries: true, dirty: false, remoteModified: undefined }
+          : t
+      )
+    )
+  }
+  localStorage.setItem(SERIES_CLEANUP_KEY(mode), '1')
+  return fixed.size
+}
+
 function applyRemote(mode: Mode, remote: GraphTask[]): void {
   const pendingDelete = new Set(loadDeleted(mode))
   const remoteById = new Map(remote.map(r => [r.id, r]))
@@ -215,6 +307,13 @@ function applyRemote(mode: Mode, remote: GraphTask[]): void {
       todos = todos.map(t => (t.id === local.id ? { ...t, ...syncedFieldsFromGraph(r, t), dirty: false } : t))
     }
   }
+
+  // Tasks that arrived or changed as part of a series To Do repeats itself keep that flag.
+  const titles = seriesTitles(remote)
+  todos = todos.map(t => {
+    const r = t.remoteId ? remoteById.get(t.remoteId) : undefined
+    return r && !t.remoteSeries && titles.has(r.title) ? { ...t, remoteSeries: true } : t
+  })
 
   saveTodosRaw(mode, todos)
 }
@@ -240,11 +339,15 @@ async function syncOnce(): Promise<void> {
     const token = await getToken()
     for (const mode of modes) {
       const link = links[mode]!
-      if (prefixRulesOutdated(mode)) rereadPrefixRules(mode, await listTasks(token, link.listId))
+      const before = await listTasks(token, link.listId)
+      if (prefixRulesOutdated(mode)) rereadPrefixRules(mode, before)
+      markSeries(mode, before)
+      let writes = await cleanUpResetSeriesCopies(mode, before, link.listId, token)
       resetStaleDailyTasks(mode)
-      await pushDeletions(mode, link.listId, token)
-      await pushTodos(mode, link.listId, token)
-      applyRemote(mode, await listTasks(token, link.listId))
+      writes += await pushDeletions(mode, link.listId, token)
+      writes += await pushTodos(mode, link.listId, token)
+      // Only re-read To Do if this sync changed it.
+      applyRemote(mode, writes ? await listTasks(token, link.listId) : before)
       // Daily tasks ticked off in To Do on an earlier day come back done; reset and un-tick them now,
       // so a single sync leaves both sides fresh for today.
       if (resetStaleDailyTasks(mode)) await pushTodos(mode, link.listId, token)

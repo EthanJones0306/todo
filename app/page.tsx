@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Category, CATEGORY_LABEL, CATEGORY_ORDER, DAY_LABELS, Mode, RecurrenceDays, Todo } from '@/types'
 import { createProjectFromTodo, loadProjects } from '@/lib/storage'
 import { DATA_CHANGE_EVENT, loadMode, loadTodos, markDeleted, resetDailyTasks, saveMode, saveTodos, shouldShowToday, getNextDueDate } from '@/lib/todos'
-import { addDays, formatLongToday, formatRelativeDate, getTodayString, greeting, isDueToday, isOverdue } from '@/lib/date'
+import { addDays, formatLongToday, formatRelativeDate, getTodayString, greeting, isDueToday, isOverdue, toDateString } from '@/lib/date'
 import { Settings, useSettings } from '@/lib/settings'
 import { canReprioritise, Priority, priorityCompare, priorityLabel, reprioritise, withParsedTitle } from '@/lib/priority'
 import AppShell, { isTypingTarget } from '@/components/AppShell'
@@ -318,7 +318,10 @@ export default function Home() {
   const query = search.trim().toLowerCase()
   const inView = todos.filter(t => matchesView(t, view) && (!query || t.text.toLowerCase().includes(query)))
   const activeTodos = sortTodos(inView.filter(t => !t.done), view === 'upcoming' ? 'due' : settings.sort)
-  const completedTodos = inView.filter(t => t.done).sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? ''))
+  const completedTodos = inView
+    // The Daily list is about today: older completed copies (e.g. To Do's repeating tasks) stay out of it.
+    .filter(t => t.done && (view !== 'daily' || (!!t.completedAt && toDateString(new Date(t.completedAt)) === getTodayString())))
+    .sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? ''))
   const overdueCount = activeTodos.filter(t => isOverdue(t.dueDate)).length
   const clearableCount = completedTodos.filter(t => t.category !== 'daily').length
   const viewTotal = activeTodos.length + completedTodos.length

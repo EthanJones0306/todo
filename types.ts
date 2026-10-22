@@ -20,6 +20,11 @@ export interface Todo {
   rank?: number
   /** High/low priority; written to To Do as an "H_" / "L_" title prefix */
   priority?: 'high' | 'low'
+  /**
+   * Part of a series To Do repeats itself: completing a copy makes To Do create the next one,
+   * so the app must never un-tick it on a new day.
+   */
+  remoteSeries?: boolean
   /** Microsoft To Do task id when this workspace is synced */
   remoteId?: string
   /** lastModifiedDateTime of the remote task when we last synced it */

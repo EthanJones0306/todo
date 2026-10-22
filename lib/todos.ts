@@ -117,7 +117,8 @@ export function shouldShowToday(dueDate?: string, recurrenceDays?: RecurrenceDay
 export function resetDailyTasks(todos: Todo[], today = getTodayString()): Todo[] {
   let changed = false
   const next = todos.map(t => {
-    if (t.category !== 'daily' || !t.done || !t.completedAt) return t
+    // To Do's own repeating tasks roll forward in To Do; un-ticking would bring back an old copy.
+    if (t.category !== 'daily' || !t.done || !t.completedAt || t.remoteSeries) return t
     if (toDateString(new Date(t.completedAt)) >= today) return t
     changed = true
     return { ...t, done: false, completedAt: undefined }

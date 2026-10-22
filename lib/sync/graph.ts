@@ -17,6 +17,8 @@ export interface GraphTask {
   status: 'notStarted' | 'inProgress' | 'completed' | 'waitingOnOthers' | 'deferred'
   dueDateTime?: GraphDateTime | null
   completedDateTime?: GraphDateTime | null
+  /** Set when To Do repeats the task itself (completing it makes To Do create the next copy) */
+  recurrence?: unknown | null
   lastModifiedDateTime: string
 }
 
