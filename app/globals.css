@@ -2258,6 +2258,30 @@ html[data-theme='crt'] .switch-thumb {
   color: var(--text-3);
 }
 
+.activity {
+  border-bottom: none;
+  padding-top: 14px;
+}
+.activity-list {
+  list-style: none;
+  margin-top: 8px;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+}
+.activity-list li {
+  display: flex;
+  gap: 12px;
+  padding: 5px 0;
+  border-top: 1px solid var(--border);
+}
+.activity-list li.is-error {
+  color: var(--danger);
+}
+.activity-time {
+  flex: 0 0 96px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
 .repair-empty {
   font-size: 0.8125rem;
   color: var(--text-2);

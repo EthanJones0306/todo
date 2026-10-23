@@ -8,6 +8,8 @@ import { createList, GraphList, listLists } from '@/lib/sync/graph'
 import {
   findReopenedCandidates,
   forgetSyncedData,
+  loadActivity,
+  SyncActivity,
   hasPendingChanges,
   loadLinks,
   markRemoteCompleted,
@@ -272,6 +274,8 @@ export default function SyncSettings({ onDataChanged }: { onDataChanged: () => v
         </>
       )}
 
+      {account && (links.personal || links.work) && <ActivityLog />}
+
       {account && (links.personal || links.work) && <ReopenedRepair onDone={onDataChanged} />}
 
       {(error || status.error) && (
@@ -384,6 +388,41 @@ function ReopenedRepair({ onDone }: { onDone: () => void }) {
       )}
 
       {message && <p className="repair-empty">{message}</p>}
+    </div>
+  )
+}
+
+/** What recent syncs changed, so problems can be seen rather than guessed at. */
+function ActivityLog() {
+  const [entries, setEntries] = useState<SyncActivity[]>([])
+  useEffect(() => {
+    const update = () => setEntries(loadActivity())
+    update()
+    window.addEventListener(STATUS_EVENT, update)
+    return () => window.removeEventListener(STATUS_EVENT, update)
+  }, [])
+
+  return (
+    <div className="settings-group activity">
+      <div className="settings-row-label">Recent sync activity</div>
+      {entries.length === 0 ? (
+        <p className="repair-empty">No changes synced yet.</p>
+      ) : (
+        <ul className="activity-list">
+          {entries.slice(0, 10).map(e => (
+            <li key={e.at} className={e.error ? 'is-error' : ''}>
+              <span className="activity-time">
+                {new Date(e.at).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' })}
+              </span>
+              <span>
+                {e.error
+                  ? e.error
+                  : [e.sent && `${e.sent} sent to To Do`, e.received && `${e.received} updated from To Do`].filter(Boolean).join(' · ')}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }

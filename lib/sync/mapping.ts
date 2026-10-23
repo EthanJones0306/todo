@@ -5,7 +5,8 @@ import { composeTitle, parseTitle, repeatPrefixOf } from '@/lib/priority'
 
 /*
  * To Do only gets a task's title and whether it's done. Priority and daily/weekly/monthly travel as
- * title prefixes (see lib/priority.ts); due dates, custom repeats and projects live in this app alone.
+ * title prefixes (see lib/priority.ts). Due dates are read from To Do but never sent; custom repeats
+ * and projects live in this app alone.
  */
 
 export function toGraphTask(todo: Todo): Partial<GraphTask> {
@@ -27,6 +28,8 @@ export function syncedFieldsFromGraph(task: GraphTask, current: Todo): Partial<T
     // z_/zz_/zzz_ set daily/weekly/monthly; removing it in To Do makes the task a one-off. Custom stays local.
     category: p.repeat ?? (repeatPrefixOf(current.category) ? 'once' : current.category),
     recurrenceDays: p.repeat ? undefined : current.recurrenceDays,
+    // A due date set or moved in To Do comes across; one set only here is kept when To Do has none.
+    dueDate: localDate(task.dueDateTime) ?? current.dueDate,
     done,
     completedAt: done ? current.completedAt ?? utcToIso(task.completedDateTime) ?? new Date().toISOString() : undefined,
     remoteId: task.id,
@@ -34,11 +37,15 @@ export function syncedFieldsFromGraph(task: GraphTask, current: Todo): Partial<T
   }
 }
 
+function localDate(value?: GraphDateTime | null): string | undefined {
+  return value?.dateTime ? toDateString(new Date(value.dateTime.slice(0, 19) + 'Z')) : undefined
+}
+
 /** A task that was created in To Do. Its due date is kept if it has one. */
 export function newTaskFromGraph(task: GraphTask): Omit<Todo, 'id'> {
   const done = task.status === 'completed'
   const p = parseTitle(task.title)
-  const due = task.dueDateTime?.dateTime ? toDateString(new Date(task.dueDateTime.dateTime.slice(0, 19) + 'Z')) : undefined
+  const due = localDate(task.dueDateTime)
   return {
     text: p.text,
     rank: p.rank,

@@ -8,7 +8,7 @@ import Sidebar, { SidebarProject, View } from '@/components/Sidebar'
 import SettingsModal, { SettingsTab } from '@/components/SettingsModal'
 import Icon from '@/components/Icon'
 import { LOCAL_CHANGE_EVENT, DATA_CHANGE_EVENT } from '@/lib/todos'
-import { getMsConfig, getMsal } from '@/lib/sync/msal'
+import { getMsConfig, getMsal, signIn } from '@/lib/sync/msal'
 import { loadLinks, pendingCount, requestSync, STATUS_EVENT } from '@/lib/sync/engine'
 import { formatAgo, useSyncStatus } from '@/lib/sync/useSync'
 
@@ -180,7 +180,11 @@ export default function AppShell({
             <button
               className={`sync-btn is-${syncStatus.phase}`}
               onClick={() =>
-                syncStatus.phase === 'signed-out' || syncStatus.phase === 'error' ? setSettingsTab('sync') : requestSync()
+                syncStatus.phase === 'signed-out'
+                  ? signIn()
+                  : syncStatus.phase === 'error'
+                  ? setSettingsTab('sync')
+                  : requestSync()
               }
               disabled={syncStatus.phase === 'syncing'}
               title={

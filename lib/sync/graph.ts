@@ -76,13 +76,33 @@ export const listLists = (token: string) => getAll<GraphList>(token, '/me/todo/l
 export const createList = (token: string, displayName: string) =>
   graph<GraphList>(token, '/me/todo/lists', { method: 'POST', body: JSON.stringify({ displayName }) })
 
+/** Every task in the list, including the full completed history. Only used for one-off repairs. */
 export const listTasks = (token: string, listId: string) =>
   getAll<GraphTask>(token, `/me/todo/lists/${listId}/tasks?$top=100`)
+
+const OPEN_FILTER = encodeURIComponent("status ne 'completed'")
+
+/**
+ * Open tasks only. The completed history (often thousands of tasks) never needs to come down: tasks
+ * that leave this list are looked up one by one to see whether they were completed or deleted.
+ */
+export async function listOpenTasks(token: string, listId: string): Promise<GraphTask[]> {
+  const base = `/me/todo/lists/${listId}/tasks?$top=100`
+  try {
+    return await getAll<GraphTask>(token, `${base}&$filter=${OPEN_FILTER}`)
+  } catch (e) {
+    if (!(e instanceof GraphError && e.status === 400)) throw e
+    return (await getAll<GraphTask>(token, base)).filter(t => t.status !== 'completed')
+  }
+}
 
 const taskPath = (listId: string, taskId?: string) => `/me/todo/lists/${listId}/tasks${taskId ? `/${taskId}` : ''}`
 
 export const createTask = (token: string, listId: string, task: Partial<GraphTask>) =>
   graph<GraphTask>(token, taskPath(listId), { method: 'POST', body: JSON.stringify(task) })
+
+export const getTask = (token: string, listId: string, taskId: string) =>
+  graph<GraphTask>(token, taskPath(listId, taskId))
 
 export const updateTask = (token: string, listId: string, taskId: string, patch: Partial<GraphTask>) =>
   graph<GraphTask>(token, taskPath(listId, taskId), { method: 'PATCH', body: JSON.stringify(patch) })

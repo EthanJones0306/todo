@@ -4,7 +4,7 @@ import { Mode, MODE_ORDER, Todo } from '@/types'
 import { loadProjects, saveProjects } from '@/lib/storage'
 import { DATA_CHANGE_EVENT, loadDeleted, resetDailyTasks, saveTodos, syncKey, loadTodos, saveDeleted, saveTodosRaw } from '@/lib/todos'
 import { getAccount, getToken, ReauthRequired } from '@/lib/sync/msal'
-import { createTask, deleteTask, GraphDateTime, GraphError, GraphTask, listTasks, updateTask } from '@/lib/sync/graph'
+import { createTask, deleteTask, getTask, GraphDateTime, GraphError, GraphTask, listOpenTasks, listTasks, updateTask } from '@/lib/sync/graph'
 import { getTodayString, toDateString } from '@/lib/date'
 import { newTaskFromGraph, syncedFieldsFromGraph, toGraphTask } from '@/lib/sync/mapping'
 import { parseTitle, repeatPrefixOf } from '@/lib/priority'
@@ -286,37 +286,96 @@ async function cleanUpResetSeriesCopies(mode: Mode, remote: GraphTask[], listId:
   return fixed.size
 }
 
-function applyRemote(mode: Mode, remote: GraphTask[]): void {
-  const pendingDelete = new Set(loadDeleted(mode))
-  const remoteById = new Map(remote.map(r => [r.id, r]))
-  let todos = loadTodos(mode)
-  const localByRemote = new Map(todos.filter(t => t.remoteId).map(t => [t.remoteId!, t]))
+// Completed To Do tasks are kept here for this long, then dropped from this browser (they stay in To Do).
+const KEEP_COMPLETED_DAYS = 14
 
-  // Removed in To Do (and not edited here since) → remove here too, along with any project made from it.
-  const removed = new Set(todos.filter(t => t.remoteId && !t.dirty && !remoteById.has(t.remoteId)).map(t => t.id))
+/**
+ * Bring To Do's state into the app, working from To Do's open tasks. A task that is open here but no
+ * longer open in To Do is looked up individually: completed there → completed here, deleted → removed.
+ * The completed history is never downloaded. Returns how many tasks changed here.
+ */
+async function applyRemote(mode: Mode, open: GraphTask[], listId: string, token: string): Promise<number> {
+  const pendingDelete = new Set(loadDeleted(mode))
+  const openById = new Map(open.map(r => [r.id, r]))
+
+  const lookedUp = new Map<string, GraphTask | null>()
+  for (const t of loadTodos(mode)) {
+    if (!t.remoteId || t.done || t.dirty || openById.has(t.remoteId) || pendingDelete.has(t.remoteId)) continue
+    try {
+      lookedUp.set(t.remoteId, await getTask(token, listId, t.remoteId))
+    } catch (e) {
+      if (!(e instanceof GraphError && e.status === 404)) throw e
+      lookedUp.set(t.remoteId, null)
+    }
+  }
+
+  // Re-read after the lookups, so edits made in the page meanwhile aren't lost.
+  let todos = loadTodos(mode)
+  let changed = 0
+
+  const removed = new Set(todos.filter(t => t.remoteId && !t.dirty && lookedUp.get(t.remoteId) === null).map(t => t.id))
   todos = todos.filter(t => !removed.has(t.id))
   if (removed.size) saveProjects(mode, loadProjects(mode).filter(p => !removed.has(p.sourceTodoId)))
+  changed += removed.size
 
-  for (const r of remote) {
+  const known = [...open, ...Array.from(lookedUp.values()).filter((r): r is GraphTask => !!r)]
+  const localByRemote = new Map(todos.filter(t => t.remoteId).map(t => [t.remoteId!, t]))
+  for (const r of known) {
     if (pendingDelete.has(r.id)) continue
     const local = localByRemote.get(r.id)
     if (!local) {
       todos.push({ id: crypto.randomUUID(), ...newTaskFromGraph(r) })
+      changed++
     } else if (!local.dirty && local.remoteModified !== r.lastModifiedDateTime) {
-      // Only the name and done state come back; repeats, due dates and order are kept from here.
       todos = todos.map(t => (t.id === local.id ? { ...t, ...syncedFieldsFromGraph(r, t), dirty: false } : t))
+      changed++
     }
   }
 
+  // Keep this browser's copy small: old completed To Do tasks are dropped here (they remain in To Do).
+  const cutoff = new Date(Date.now() - KEEP_COMPLETED_DAYS * 86400000).toISOString()
+  const before = todos.length
+  todos = todos.filter(
+    t => !(t.remoteId && t.done && !t.dirty && !t.isProject && t.completedAt && t.completedAt < cutoff && !openById.has(t.remoteId))
+  )
+  changed += before - todos.length
+
   // Tasks that arrived or changed as part of a series To Do repeats itself keep that flag.
-  const titles = seriesTitles(remote)
+  const titles = seriesTitles(open)
   todos = todos.map(t => {
-    const r = t.remoteId ? remoteById.get(t.remoteId) : undefined
+    const r = t.remoteId ? openById.get(t.remoteId) : undefined
     return r && !t.remoteSeries && titles.has(r.title) ? { ...t, remoteSeries: true } : t
   })
 
   saveTodosRaw(mode, todos)
+  return changed
 }
+
+/* ---------- Activity log ---------- */
+
+export interface SyncActivity {
+  at: string
+  sent: number
+  received: number
+  error?: string
+}
+
+const ACTIVITY_KEY = 'arcade-sync-activity'
+
+export function loadActivity(): SyncActivity[] {
+  try {
+    return JSON.parse(localStorage.getItem(ACTIVITY_KEY) || '[]')
+  } catch {
+    return []
+  }
+}
+
+/** Keeps the last 30 syncs that changed something or failed. */
+function logActivity(entry: SyncActivity): void {
+  if (!entry.sent && !entry.received && !entry.error) return
+  localStorage.setItem(ACTIVITY_KEY, JSON.stringify([entry, ...loadActivity()].slice(0, 30)))
+}
+
 
 /* ---------- Repair: tasks the old daily reset re-opened ---------- */
 
@@ -416,20 +475,36 @@ async function syncOnce(): Promise<void> {
   setStatus({ ...status, phase: 'syncing', error: undefined })
   try {
     const token = await getToken()
+    let sent = 0
+    let received = 0
     for (const mode of modes) {
       const link = links[mode]!
-      const before = await listTasks(token, link.listId)
-      if (prefixRulesOutdated(mode)) rereadPrefixRules(mode, before)
+      const before = await listOpenTasks(token, link.listId)
+      if (prefixRulesOutdated(mode)) {
+        // Tasks about to be sent must be re-read too, even if they're no longer open in To Do.
+        const openIds = new Set(before.map(r => r.id))
+        const extra: GraphTask[] = []
+        for (const t of loadTodos(mode)) {
+          if (!t.remoteId || !t.dirty || openIds.has(t.remoteId)) continue
+          try {
+            extra.push(await getTask(token, link.listId, t.remoteId))
+          } catch (e) {
+            if (!(e instanceof GraphError && e.status === 404)) throw e
+          }
+        }
+        rereadPrefixRules(mode, [...before, ...extra])
+      }
       markSeries(mode, before)
       let writes = await cleanUpResetSeriesCopies(mode, before, link.listId, token)
       resetStaleDailyTasks(mode)
       writes += await pushDeletions(mode, link.listId, token)
       writes += await pushTodos(mode, link.listId, token)
       // Only re-read To Do if this sync changed it.
-      applyRemote(mode, writes ? await listTasks(token, link.listId) : before)
-      // Daily tasks ticked off in To Do on an earlier day come back done; reset and un-tick them now,
-      // so a single sync leaves both sides fresh for today.
-      if (resetStaleDailyTasks(mode)) await pushTodos(mode, link.listId, token)
+      received += await applyRemote(mode, writes ? await listOpenTasks(token, link.listId) : before, link.listId, token)
+      // A daily task created here that was ticked off on an earlier day (here or in To Do) is reset and
+      // un-ticked in To Do in this same sync.
+      if (resetStaleDailyTasks(mode)) writes += await pushTodos(mode, link.listId, token)
+      sent += writes
       const latest = loadLinks()
       if (latest[mode]?.listId === link.listId) {
         latest[mode] = { ...latest[mode]!, lastSync: new Date().toISOString() }
@@ -437,6 +512,7 @@ async function syncOnce(): Promise<void> {
       }
     }
     window.dispatchEvent(new Event(DATA_CHANGE_EVENT))
+    logActivity({ at: new Date().toISOString(), sent, received })
     setStatus({ phase: 'idle', lastSync: new Date().toISOString() })
   } catch (e) {
     window.dispatchEvent(new Event(DATA_CHANGE_EVENT))
@@ -450,6 +526,7 @@ async function syncOnce(): Promise<void> {
         : e instanceof Error
         ? e.message
         : 'Sync failed'
+    logActivity({ at: new Date().toISOString(), sent: 0, received: 0, error: message })
     setStatus({ ...status, phase: e instanceof ReauthRequired ? 'signed-out' : 'error', error: message })
   }
 }
