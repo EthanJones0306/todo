@@ -6,7 +6,7 @@ import { DATA_CHANGE_EVENT, loadDeleted, resetDailyTasks, saveTodos, syncKey, lo
 import { getAccount, getToken, ReauthRequired } from '@/lib/sync/msal'
 import { createTask, deleteTask, getTask, GraphDateTime, GraphError, GraphTask, listOpenTasks, listTasks, updateTask } from '@/lib/sync/graph'
 import { getTodayString, toDateString } from '@/lib/date'
-import { newTaskFromGraph, syncedFieldsFromGraph, toGraphTask } from '@/lib/sync/mapping'
+import { localDate, newTaskFromGraph, syncedFieldsFromGraph, toGraphTask } from '@/lib/sync/mapping'
 import { parseTitle, repeatPrefixOf } from '@/lib/priority'
 
 /* ---------- Linked lists ---------- */
@@ -137,11 +137,27 @@ async function pushTodos(mode: Mode, listId: string, token: string): Promise<num
       if (!(e instanceof GraphError && e.status === 404 && todo.remoteId)) throw e
       remote = await createTask(token, listId, body)
     }
+    // Ticking a task To Do repeats doesn't close it: To Do records the occurrence separately and moves
+    // this task's due date on. If the reply doesn't show that yet, read the task once more.
+    if (todo.done && remote.status === 'completed' && remote.recurrence) {
+      remote = await getTask(token, listId, remote.id).catch(() => remote)
+    }
+    const rolledForward = todo.done && remote.status !== 'completed'
     patchStoredTodo(mode, todo.id, current => ({
       remoteId: remote.id,
       remoteModified: remote.lastModifiedDateTime,
       // Only clear the flag if nothing changed while the request was in flight.
       dirty: contentKey(current) !== key,
+      ...(rolledForward && contentKey(current) === key
+        ? {
+            done: false,
+            completedAt: undefined,
+            lastCompletedAt: current.completedAt ?? new Date().toISOString(),
+            dueDate: localDate(remote.dueDateTime) ?? current.dueDate,
+            remoteDue: localDate(remote.dueDateTime),
+            remoteSeries: true,
+          }
+        : {}),
     }))
   }
   return writes
@@ -326,7 +342,8 @@ async function applyRemote(mode: Mode, open: GraphTask[], listId: string, token:
     if (!local) {
       todos.push({ id: crypto.randomUUID(), ...newTaskFromGraph(r) })
       changed++
-    } else if (!local.dirty && local.remoteModified !== r.lastModifiedDateTime) {
+    } else if (!local.dirty && (local.remoteModified !== r.lastModifiedDateTime || (local.done && r.status !== 'completed'))) {
+      // (Also when it's done here but open in To Do: a repeating task To Do moved on to its next occurrence.)
       // A lagging read can return an older version than one this sync just wrote; never step backwards.
       if (local.remoteModified && r.lastModifiedDateTime < local.remoteModified) continue
       todos = todos.map(t => (t.id === local.id ? { ...t, ...syncedFieldsFromGraph(r, t), dirty: false } : t))

@@ -5,8 +5,9 @@
  * The fake server behaves like To Do where it matters:
  * - GET …/tasks supports $filter=status ne 'completed' and @odata paging-free responses
  * - GET/PATCH/DELETE …/tasks/{id}
- * - completing a task that has a recurrence creates the next copy (next due date) and moves the
- *   recurrence onto it, as To Do does
+ * - completing a task that has a recurrence behaves as real To Do does (checked against live Graph data,
+ *   Oct 2026): the task itself stays open and its due date moves to the next occurrence after the old
+ *   one, and a separate completed record (new id, old due date, recurrence kept) is created
  */
 const Module = require('module')
 const path = require('path')
@@ -67,6 +68,16 @@ const addRemote = (title, extra = {}) => {
   tasks.set(t.id, t)
   return t
 }
+const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+/** The next occurrence after `date` (YYYY-MM-DD) for a daily or weekly(daysOfWeek) pattern. */
+const nextOccurrence = (date, pattern) => {
+  const d = new Date(date + 'T12:00:00Z')
+  for (let i = 0; i < 14; i++) {
+    d.setUTCDate(d.getUTCDate() + (pattern.type === 'daily' && i === 0 ? (pattern.interval || 1) - 1 : 0) + 1)
+    if (pattern.type === 'daily' || (pattern.daysOfWeek || []).includes(DAY_NAMES[d.getUTCDay()])) break
+  }
+  return d.toISOString().slice(0, 10)
+}
 global.fetch = async (url, init = {}) => {
   const method = init.method || 'GET'
   const u = new URL(url)
@@ -108,10 +119,15 @@ global.fetch = async (url, init = {}) => {
     Object.assign(t, body)
     stamp(t)
     if (!wasDone && t.status === 'completed' && t.recurrence) {
-      const d = new Date(t.dueDateTime.dateTime.slice(0, 10) + 'T12:00:00Z')
-      d.setUTCDate(d.getUTCDate() + 1)
-      addRemote(t.title, { dueDateTime: { dateTime: d.toISOString().slice(0, 19), timeZone: 'UTC' }, recurrence: t.recurrence })
-      t.recurrence = null
+      addRemote(t.title, {
+        status: 'completed',
+        dueDateTime: t.dueDateTime,
+        completedDateTime: { dateTime: new Date().toISOString().slice(0, 19), timeZone: 'UTC' },
+        recurrence: t.recurrence,
+      })
+      t.status = 'notStarted'
+      t.dueDateTime = { dateTime: nextOccurrence(t.dueDateTime.dateTime.slice(0, 10), t.recurrence.pattern) + 'T12:00:00.0000000', timeZone: 'UTC' }
+      stamp(t)
     }
     return json(200, { ...t })
   }
@@ -363,34 +379,65 @@ const ok = msg => {
   ok('daily tasks from To Do are left alone by the morning reset')
 
   /* ===== To Do-repeated series ===== */
-  const c2 = addRemote('z_Recon Summary', { dueDateTime: dueOn(-2) })
-  const c1 = addRemote('z_Recon Summary', { dueDateTime: dueOn(-1) })
-  const c0 = addRemote('z_Recon Summary', { dueDateTime: dueOn(0) })
+  // Completed records the old reset re-opened (real ones keep the recurrence), next to the real task.
+  const c2 = addRemote('z_Recon Summary', { dueDateTime: dueOn(-2), recurrence: rec })
+  const c1 = addRemote('z_Recon Summary', { dueDateTime: dueOn(-1), recurrence: rec })
+  const c0 = addRemote('z_Recon Summary', { dueDateTime: dueOn(0), recurrence: rec })
   const cT = addRemote('z_Recon Summary', { dueDateTime: dueOn(1), recurrence: rec })
   store.delete('arcade-sync-series-cleanup-' + mode)
   const n0 = tasks.size
   await sync()
   assert.strictEqual(tasks.size, n0, 'cleanup creates no copies')
   assert.deepStrictEqual([c2, c1, c0, cT].map(t => t.status), ['completed', 'completed', 'notStarted', 'notStarted'])
+  assert.ok(!c2.recurrence && !c1.recurrence, 'recurrence removed first, so completing them moves nothing on')
   calls.length = 0
   await sync()
   assert.ok(!calls.some(c => c.startsWith('PATCH')), 'cleanup runs once')
   ok('copies brought back by the old reset are ticked off again without creating new ones')
 
-  // Ticking the overdue copy here: To Do creates the next copy due today — the Daily list must not show it
-  const ov = addRemote('z_Data Feed Dashboard', { dueDateTime: dueOn(-1), recurrence: rec })
+  // A task To Do repeats (weekdays), overdue from yesterday, ticked here:
+  const weekdays = { pattern: { type: 'daily', interval: 1 }, range: { type: 'noEnd', startDate: dayStr(-30) } }
+  const dfd = addRemote('z_Data Feed Dashboard', { dueDateTime: dueOn(-1), recurrence: weekdays })
   await sync()
-  const dfd = local('Data Feed Dashboard')
-  commit(all => all.map(t => (t.id === dfd.id ? { ...t, done: true, completedAt: now } : t)))
+  const dfdLocal = local('Data Feed Dashboard')
+  assert.ok(dfdLocal.remoteSeries && !dfdLocal.done)
+  commit(all => all.map(t => (t.id === dfdLocal.id ? { ...t, done: true, completedAt: now } : t)))
   await sync()
-  const dfdCopies = remotes('z_Data Feed Dashboard')
-  assert.strictEqual(dfdCopies.length, 2)
-  assert.ok(ov.status === 'completed' && dfdCopies.some(t => t.status === 'notStarted' && t.dueDateTime.dateTime.startsWith(dayStr(0))), 'To Do made a copy due today')
-  const ctx = views.buildViewContext(loadTodos(mode), 1)
-  const dailyList = loadTodos(mode).filter(t => views.inView(t, 'daily', ctx)).map(t => t.text)
-  assert.ok(!dailyList.includes('Data Feed Dashboard'), 'done for today: the new copy does not reappear')
-  assert.ok(!loadTodos(mode).filter(t => views.inView(t, 'today', ctx)).some(t => t.text === 'Data Feed Dashboard' && !t.done))
-  ok('ticking a daily task removes it for today, even when To Do immediately creates the next copy')
+  assert.strictEqual(dfd.status, 'notStarted', 'To Do keeps the task open…')
+  assert.ok(dfd.dueDateTime.dateTime.startsWith(dayStr(0)), '…and moves it to the next occurrence (today)')
+  assert.strictEqual(remotes('z_Data Feed Dashboard').filter(t => t.status === 'completed').length, 1, 'one completion recorded')
+  const after1 = local('Data Feed Dashboard')
+  assert.ok(!after1.done && after1.lastCompletedAt && after1.dueDate === dayStr(0), 'here: open, due today, done today')
+  const ctxToday = views.buildViewContext(loadTodos(mode), 1)
+  assert.ok(!views.inView(after1, 'daily', ctxToday), 'not on today’s Daily list')
+  assert.ok(!views.inView(after1, 'today', ctxToday), 'not on Today either')
+  const ctxTomorrow = views.buildViewContext(loadTodos(mode), 1, dayStr(1))
+  assert.ok(views.inView(after1, 'daily', ctxTomorrow), 'back on the Daily list tomorrow')
+  calls.length = 0
+  await sync()
+  await sync()
+  assert.strictEqual(remotes('z_Data Feed Dashboard').filter(t => t.status === 'completed').length, 1, 'never ticked twice')
+  ok('ticking a repeating task removes it for today, even though To Do moves it to today; it is back tomorrow')
+
+  // Ticked in To Do itself: the due date jumps forward and the app treats that as done for today
+  const pls = addRemote('z_Platform Summary', { dueDateTime: dueOn(-1), recurrence: weekdays })
+  await sync()
+  await fetch(`https://graph.microsoft.com/v1.0/me/todo/lists/${LIST}/tasks/${pls.id}`, { method: 'PATCH', body: JSON.stringify({ status: 'completed' }) })
+  await sync()
+  const plsLocal = local('Platform Summary')
+  assert.ok(!plsLocal.done && plsLocal.dueDate === dayStr(0) && plsLocal.lastCompletedAt)
+  assert.ok(!views.inView(plsLocal, 'daily', views.buildViewContext(loadTodos(mode), 1)), 'ticked in To Do: off today’s list')
+  ok('ticking a repeating task in To Do also takes it off today’s list')
+
+  // A repeating task stuck as "done" here (from the earlier version) is repaired from To Do
+  const stuck = addRemote('z_Account Mapping', { dueDateTime: dueOn(2), recurrence: weekdays })
+  await sync()
+  saveTodosRaw(mode, loadTodos(mode).map(t => (t.remoteId === stuck.id ? { ...t, done: true, completedAt: yesterday } : t)))
+  await sync()
+  const fixed = local('Account Mapping')
+  assert.ok(!fixed.done && fixed.dueDate === dayStr(2) && fixed.lastCompletedAt === yesterday, 'open again with To Do’s next due date')
+  assert.strictEqual(stuck.status, 'notStarted')
+  ok('repeating tasks stuck as done here are corrected from To Do')
 
   /* ===== Open-only pulls: completions, deletions and due dates from To Do ===== */
   const p1 = addRemote('Pay supplier')

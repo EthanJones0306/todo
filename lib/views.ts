@@ -41,8 +41,9 @@ export interface ViewContext {
  * Daily, weekly and monthly lists show only what is still open for the current day, week or month:
  * - open tasks due in this period or earlier (overdue stays, since To Do only creates the next copy
  *   once one is ticked off), or with no due date;
- * - once any copy of a task is ticked off this period, its other copies are hidden until the next
- *   period — e.g. ticking an overdue copy makes To Do create one due today, which shouldn't reappear.
+ * - once a task is ticked off this period it stays off the list until the next period — including a
+ *   task To Do repeats, which To Do keeps open and simply moves to its next due date (ticking an
+ *   overdue one moves it to today, and it shouldn't reappear).
  */
 export function buildViewContext(todos: Todo[], weekStartsOn: 0 | 1, today = getTodayString()): ViewContext {
   const bounds = {
@@ -52,8 +53,10 @@ export function buildViewContext(todos: Todo[], weekStartsOn: 0 | 1, today = get
   }
   const doneKeys: Record<PeriodCategory, Set<string>> = { daily: new Set(), weekly: new Set(), monthly: new Set() }
   for (const t of todos) {
-    if (!t.done || !t.completedAt || !isPeriodCategory(t.category)) continue
-    if (toDateString(new Date(t.completedAt)) >= bounds[t.category].start) doneKeys[t.category].add(seriesKey(t))
+    if (!isPeriodCategory(t.category)) continue
+    // Done here, or a task To Do repeats whose latest occurrence was ticked off (it stays open in To Do).
+    const doneAt = t.done ? t.completedAt : t.lastCompletedAt
+    if (doneAt && toDateString(new Date(doneAt)) >= bounds[t.category].start) doneKeys[t.category].add(seriesKey(t))
   }
   return {
     today,

@@ -21,7 +21,13 @@ function utcToIso(value?: GraphDateTime | null): string | undefined {
 export function syncedFieldsFromGraph(task: GraphTask, current: Todo): Partial<Todo> {
   const done = task.status === 'completed'
   const p = parseTitle(task.title)
+  const due = localDate(task.dueDateTime)
+  // A repeating task stays open in To Do and its due date moves on when an occurrence is ticked off
+  // (in To Do or here). Seeing it open again with a later due date means that occurrence was done.
+  const rolledForward = !done && !!task.recurrence && (current.done || (!!due && !!current.remoteDue && due > current.remoteDue))
   return {
+    lastCompletedAt: rolledForward ? current.completedAt ?? task.lastModifiedDateTime : current.lastCompletedAt,
+    remoteSeries: current.remoteSeries || !!task.recurrence,
     text: p.text,
     rank: p.rank,
     priority: p.priority,
@@ -38,7 +44,7 @@ export function syncedFieldsFromGraph(task: GraphTask, current: Todo): Partial<T
   }
 }
 
-function localDate(value?: GraphDateTime | null): string | undefined {
+export function localDate(value?: GraphDateTime | null): string | undefined {
   return value?.dateTime ? toDateString(new Date(value.dateTime.slice(0, 19) + 'Z')) : undefined
 }
 
@@ -52,6 +58,7 @@ export function newTaskFromGraph(task: GraphTask): Omit<Todo, 'id'> {
     rank: p.rank,
     priority: p.priority,
     done,
+    remoteSeries: !!task.recurrence || undefined,
     category: p.repeat ?? 'once',
     dueDate: due,
     remoteDue: due,
