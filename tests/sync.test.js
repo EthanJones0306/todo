@@ -69,14 +69,19 @@ const addRemote = (title, extra = {}) => {
   return t
 }
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
-/** The next occurrence after `date` (YYYY-MM-DD) for a daily or weekly(daysOfWeek) pattern. */
+/** The next occurrence after a local date (YYYY-MM-DD) for a daily or weekly(daysOfWeek) pattern. */
 const nextOccurrence = (date, pattern) => {
-  const d = new Date(date + 'T12:00:00Z')
+  const d = new Date(date + 'T00:00:00')
   for (let i = 0; i < 14; i++) {
-    d.setUTCDate(d.getUTCDate() + (pattern.type === 'daily' && i === 0 ? (pattern.interval || 1) - 1 : 0) + 1)
-    if (pattern.type === 'daily' || (pattern.daysOfWeek || []).includes(DAY_NAMES[d.getUTCDay()])) break
+    d.setDate(d.getDate() + (pattern.type === 'daily' && i === 0 ? (pattern.interval || 1) - 1 : 0) + 1)
+    if (pattern.type === 'daily' || (pattern.daysOfWeek || []).includes(DAY_NAMES[d.getDay()])) break
   }
-  return d.toISOString().slice(0, 10)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+/** The local calendar date of a To Do date-time (sent in UTC). */
+const localDay = dt => {
+  const d = new Date(dt.dateTime.slice(0, 19) + 'Z')
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 global.fetch = async (url, init = {}) => {
   const method = init.method || 'GET'
@@ -126,7 +131,7 @@ global.fetch = async (url, init = {}) => {
         recurrence: t.recurrence,
       })
       t.status = 'notStarted'
-      t.dueDateTime = { dateTime: nextOccurrence(t.dueDateTime.dateTime.slice(0, 10), t.recurrence.pattern) + 'T12:00:00.0000000', timeZone: 'UTC' }
+      t.dueDateTime = dueAt(nextOccurrence(localDay(t.dueDateTime), t.recurrence.pattern))
       stamp(t)
     }
     return json(200, { ...t })
@@ -160,7 +165,9 @@ const dayStr = n => {
   d.setDate(d.getDate() + n)
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
-const dueOn = n => ({ dateTime: `${dayStr(n)}T12:00:00.0000000`, timeZone: 'UTC' })
+/** A due date as real To Do sends it: local midnight of that day, expressed in UTC (e.g. 22:00 the day before in SAST). */
+const dueAt = date => ({ dateTime: new Date(date + 'T00:00:00').toISOString().slice(0, 19) + '.0000000', timeZone: 'UTC' })
+const dueOn = n => dueAt(dayStr(n))
 const now = new Date().toISOString()
 const yesterday = new Date(Date.now() - 86400000).toISOString()
 const rec = { pattern: { type: 'daily', interval: 1 }, range: { type: 'noEnd', startDate: dayStr(-5) } }
@@ -404,7 +411,7 @@ const ok = msg => {
   commit(all => all.map(t => (t.id === dfdLocal.id ? { ...t, done: true, completedAt: now } : t)))
   await sync()
   assert.strictEqual(dfd.status, 'notStarted', 'To Do keeps the task open…')
-  assert.ok(dfd.dueDateTime.dateTime.startsWith(dayStr(0)), '…and moves it to the next occurrence (today)')
+  assert.strictEqual(localDay(dfd.dueDateTime), dayStr(0), '…and moves it to the next occurrence (today)')
   assert.strictEqual(remotes('z_Data Feed Dashboard').filter(t => t.status === 'completed').length, 1, 'one completion recorded')
   const after1 = local('Data Feed Dashboard')
   assert.ok(!after1.done && after1.lastCompletedAt && after1.dueDate === dayStr(0), 'here: open, due today, done today')

@@ -1,0 +1,31 @@
+name: CI
+
+# Runs on every push and pull request: type check, the sync tests against the fake To Do server
+# (in UTC and in South African time, since dates are local-time sensitive), and a production build.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        tz: [UTC, Africa/Johannesburg]
+    env:
+      TZ: ${{ matrix.tz }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Type check
+        run: npx tsc --noEmit -p .
+      - name: Sync tests
+        run: npm test
+      - name: Build
+        if: matrix.tz == 'UTC'
+        run: npm run build
