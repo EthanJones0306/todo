@@ -12,6 +12,7 @@ import { canReprioritise, Priority, priorityCompare, priorityLabel, reprioritise
 import AppShell, { isTypingTarget } from '@/components/AppShell'
 import { ALL_VIEWS, View, VIEW_LABEL } from '@/components/Sidebar'
 import Icon from '@/components/Icon'
+import { useSortable } from '@/components/useSortable'
 import { buildViewContext, inView, isPeriodCategory, PeriodCategory } from '@/lib/views'
 import { ConfirmDialog, Kbd, Menu, MenuItem, MenuLabel, MenuSeparator, Toast, ToastData } from '@/components/ui'
 
@@ -47,8 +48,8 @@ export default function Home() {
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
-  const [draggingId, setDraggingId] = useState<string | null>(null)
-  const [dragOverId, setDragOverId] = useState<string | null>(null)
+  // Read out by screen readers after a reorder ("Moved to #2").
+  const [announcement, setAnnouncement] = useState('')
   const [completedOpenByView, setCompletedOpenByView] = useState<Partial<Record<View, boolean>>>({})
   // Done tasks leave the Daily list for the day (folded away); other lists show them open.
   const completedOpen = completedOpenByView[view] ?? view !== 'daily'
@@ -258,11 +259,14 @@ export default function Home() {
     })
   }
 
-  /** Priority sort: dropping a task onto another takes that task's place and priority, then tells you what changed. */
-  const moveByPriority = (movedId: string, targetId: string) => {
+  /**
+   * Priority sort: dropping a task onto another takes that task's place and priority, then tells you what changed.
+   * Returns the moved task's new priority label ('' for none), or undefined if nothing moved.
+   */
+  const moveByPriority = (movedId: string, targetId: string): string | undefined => {
     const before = loadTodos(modeRef.current)
     const after = reprioritise(before, movedId, targetId)
-    if (after === before) return
+    if (after === before) return undefined
     commit(() => after)
     const moved = after.find(t => t.id === movedId)!
     const wasLabel = priorityLabel(before.find(t => t.id === movedId)!)
@@ -270,7 +274,7 @@ export default function Home() {
     const oldRank = new Map(before.map(t => [t.id, t.rank]))
     const others = after.filter(t => t.id !== movedId && t.rank !== oldRank.get(t.id)).length
     // Reordering within the same level (e.g. two High tasks) changes nothing in To Do, so stay quiet.
-    if (wasLabel === nowLabel && others === 0) return
+    if (wasLabel === nowLabel && others === 0) return nowLabel ?? ''
     const renumbered = others ? ` · ${others} other${others === 1 ? '' : 's'} renumbered` : ''
     // Undo puts back only the priorities this move changed, on top of whatever has happened since.
     const oldLevel = new Map(before.map(t => [t.id, { rank: t.rank, priority: t.priority }]))
@@ -278,6 +282,7 @@ export default function Home() {
     showToast(`“${moved.text}” → ${nowLabel ?? 'no priority'}${renumbered}`, () =>
       commit(prev => prev.map(t => (touched.has(t.id) ? { ...t, ...oldLevel.get(t.id) } : t)))
     )
+    return nowLabel ?? ''
   }
 
   const convertToProject = (todo: Todo) => {
@@ -362,7 +367,49 @@ export default function Home() {
   const viewTotal = activeTodos.length + completedTodos.length
   const prioritySort = settings.sort === 'priority' && view !== 'upcoming'
   const canDrag = (settings.sort === 'manual' || prioritySort) && view !== 'upcoming' && !query
-  const dragIndex = draggingId ? activeTodos.findIndex(t => t.id === draggingId) : -1
+
+  /** Drag, keyboard and menu reordering all end here: take the target's place (and, in priority sort, its level). */
+  const reorder = (movedId: string, targetId: string) => {
+    if (prioritySort) {
+      const label = moveByPriority(movedId, targetId)
+      if (label !== undefined) setAnnouncement(`Moved to ${label || 'no priority'}`)
+    } else {
+      moveBefore(movedId, targetId)
+      setAnnouncement(`Moved to position ${activeTodos.findIndex(t => t.id === targetId) + 1} of ${activeTodos.length}`)
+    }
+  }
+
+  /** The neighbour a task can swap with in that direction, if any — repeat groups are separate in priority sort. */
+  const neighbour = (todo: Todo, step: -1 | 1) => {
+    const target = activeTodos[activeTodos.indexOf(todo) + step]
+    if (!canDrag || todo.done || !target) return undefined
+    return !prioritySort || canReprioritise(todo, target) ? target : undefined
+  }
+
+  const sortable = useSortable({
+    ids: activeTodos.map(t => t.id),
+    enabled: canDrag,
+    // In priority sort a task can only land among the rows of its own repeat group.
+    getRange: id => {
+      if (!prioritySort) return [0, activeTodos.length - 1]
+      const i = activeTodos.findIndex(t => t.id === id)
+      let lo = i
+      let hi = i
+      while (lo > 0 && canReprioritise(activeTodos[i], activeTodos[lo - 1])) lo--
+      while (hi < activeTodos.length - 1 && canReprioritise(activeTodos[i], activeTodos[hi + 1])) hi++
+      return [lo, hi]
+    },
+    onDrop: reorder,
+  })
+  const drag = sortable.drag
+
+  // Priority sort: preview the level the dragged task would take if dropped now.
+  const dropPreview = (() => {
+    if (!drag || drag.settling || drag.to === drag.from || !prioritySort) return undefined
+    const target = activeTodos[drag.to]
+    const moved = target && reprioritise(todos, drag.id, target.id).find(t => t.id === drag.id)
+    return moved ? `→ ${priorityLabel(moved) ?? 'No priority'}` : undefined
+  })()
 
   const groups: { key: string; label: string; items: Todo[] }[] = (() => {
     if (view !== 'upcoming') return [{ key: 'all', label: '', items: activeTodos }]
@@ -378,39 +425,28 @@ export default function Home() {
     const today = !todo.done && isDueToday(todo.dueDate)
     const project = todo.projectId ? projectsById.get(todo.projectId) : undefined
     const projectDone = project?.phases.filter(p => p.status === 'done').length ?? 0
+    const sortableRow = canDrag && !todo.done
+    const index = sortableRow ? activeTodos.indexOf(todo) : -1
+    const up = neighbour(todo, -1)
+    const down = neighbour(todo, 1)
     return (
       <TaskRow
         key={todo.id}
         todo={todo}
-        draggable={canDrag && !todo.done && editingId !== todo.id}
+        sortable={sortableRow}
+        rowRef={sortableRow ? sortable.rowRef(todo.id) : undefined}
+        onRowPointerDown={sortableRow && editingId !== todo.id ? sortable.onRowPointerDown(todo.id) : undefined}
+        onGripPointerDown={sortable.onGripPointerDown(todo.id)}
+        dropPreview={drag?.id === todo.id ? dropPreview : undefined}
         className={[
           todo.done && 'done',
           justCompleted === todo.id && 'just-completed',
-          draggingId === todo.id && 'dragging',
-          dragOverId === todo.id && draggingId !== todo.id && 'drag-over',
-          // Moving down lands below the target, so draw the drop line there.
-          dragOverId === todo.id && dragIndex > -1 && dragIndex < activeTodos.indexOf(todo) && 'drag-below',
+          drag?.id === todo.id && 'is-lifted',
+          drag?.id === todo.id && drag.settling && 'is-settling',
+          drag && index > -1 && (index < drag.range[0] || index > drag.range[1]) && 'is-out-of-range',
         ]
           .filter(Boolean)
           .join(' ')}
-        onDragStart={() => setDraggingId(todo.id)}
-        onDragEnd={() => {
-          setDraggingId(null)
-          setDragOverId(null)
-        }}
-        onDragOver={() => {
-          const allowed = !prioritySort || canReprioritise(todos.find(t => t.id === draggingId), todo)
-          setDragOverId(allowed ? todo.id : null)
-          return allowed
-        }}
-        onDrop={() => {
-          if (draggingId) {
-            if (prioritySort) moveByPriority(draggingId, todo.id)
-            else moveBefore(draggingId, todo.id)
-          }
-          setDraggingId(null)
-          setDragOverId(null)
-        }}
         onToggle={() => toggleTodo(todo.id)}
         editing={editingId === todo.id}
         editText={editText}
@@ -426,16 +462,8 @@ export default function Home() {
         onConvert={() => convertToProject(todo)}
         onOpenProject={() => router.push(`/project/${todo.projectId}`)}
         onMoveToTop={() => moveToTop(todo.id)}
-        onMoveUp={(() => {
-          const i = activeTodos.indexOf(todo)
-          const target = activeTodos[i - 1]
-          return prioritySort && !query && canReprioritise(todo, target) ? () => moveByPriority(todo.id, target.id) : undefined
-        })()}
-        onMoveDown={(() => {
-          const i = activeTodos.indexOf(todo)
-          const target = activeTodos[i + 1]
-          return prioritySort && !query && canReprioritise(todo, target) ? () => moveByPriority(todo.id, target.id) : undefined
-        })()}
+        onMoveUp={up && (() => reorder(todo.id, up.id))}
+        onMoveDown={down && (() => reorder(todo.id, down.id))}
         onDuplicate={() => duplicateTodo(todo)}
         onDelete={() => requestDelete(todo)}
         canMove={settings.sort === 'manual'}
@@ -715,7 +743,7 @@ export default function Home() {
                       <span className="group-count">{g.items.length}</span>
                     </div>
                   )}
-                  <div className="task-list">{g.items.map(renderTask)}</div>
+                  <div className={`task-list ${drag ? 'is-sorting' : ''}`}>{g.items.map(renderTask)}</div>
                 </section>
               ))
             )}
@@ -741,6 +769,9 @@ export default function Home() {
         )}
       </div>
 
+      <div className="sr-only" aria-live="polite">
+        {announcement}
+      </div>
       <Toast toast={toast} onDismiss={dismissToast} />
 
       {confirm?.kind === 'delete' && (
@@ -778,12 +809,13 @@ export default function Home() {
 interface TaskRowProps {
   todo: Todo
   className: string
-  draggable: boolean
-  onDragStart: () => void
-  onDragEnd: () => void
-  /** Returns whether the dragged task may be dropped here. */
-  onDragOver: () => boolean
-  onDrop: () => void
+  /** Shows the reorder grip; the row can be dragged and moved with the arrow keys. */
+  sortable: boolean
+  rowRef?: (el: HTMLElement | null) => void
+  onRowPointerDown?: (e: React.PointerEvent<HTMLElement>) => void
+  onGripPointerDown: (e: React.PointerEvent<HTMLElement>) => void
+  /** Floating hint on the dragged row, e.g. "→ #2". */
+  dropPreview?: string
   onToggle: () => void
   editing: boolean
   editText: string
@@ -808,6 +840,7 @@ interface TaskRowProps {
 function TaskRow(p: TaskRowProps) {
   const { todo } = p
   const dateRef = useRef<HTMLInputElement>(null)
+  const gripRef = useRef<HTMLButtonElement>(null)
   const today = getTodayString()
 
   const pickDate = () => {
@@ -821,27 +854,31 @@ function TaskRow(p: TaskRowProps) {
   }
 
   return (
-    <div
-      className={`task ${p.className}`}
-      draggable={p.draggable}
-      onDragStart={e => {
-        e.dataTransfer.effectAllowed = 'move'
-        e.dataTransfer.setData('text/plain', todo.id)
-        p.onDragStart()
-      }}
-      onDragEnd={p.onDragEnd}
-      onDragOver={e => {
-        if (!p.draggable) return
-        if (p.onDragOver()) e.preventDefault()
-      }}
-      onDrop={e => {
-        e.preventDefault()
-        p.onDrop()
-      }}
-    >
-      {p.draggable && (
-        <span className="task-grip" aria-hidden="true">
+    <div className={`task ${p.className}`} ref={p.rowRef} onPointerDown={p.onRowPointerDown}>
+      {p.sortable && (
+        <button
+          ref={gripRef}
+          type="button"
+          className="task-grip"
+          aria-label={`Reorder “${todo.text}”`}
+          title="Drag to reorder, or use the arrow keys"
+          onPointerDown={p.onGripPointerDown}
+          onKeyDown={e => {
+            if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
+            e.preventDefault()
+            const move = e.key === 'ArrowUp' ? p.onMoveUp : p.onMoveDown
+            if (!move) return
+            move()
+            // The row is re-inserted at its new place, which drops focus; put it back on this grip.
+            requestAnimationFrame(() => gripRef.current?.focus())
+          }}
+        >
           <Icon name="grip" size={14} />
+        </button>
+      )}
+      {p.dropPreview && (
+        <span className="task-drop-preview" aria-hidden="true">
+          {p.dropPreview}
         </span>
       )}
       <button
