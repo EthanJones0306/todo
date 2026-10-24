@@ -9,3 +9,6 @@ out/
 .env.*
 .vercel
 .env*
+
+# Compiled test build
+tests/.build

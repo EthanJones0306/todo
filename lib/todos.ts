@@ -111,21 +111,41 @@ export function shouldShowToday(dueDate?: string, recurrenceDays?: RecurrenceDay
 }
 
 /**
- * Daily tasks ticked off on an earlier day come back unticked, so each day starts fresh.
- * Returns the same array when nothing needs resetting.
+ * Each morning, daily tasks created in this app start fresh. Completed tasks are never re-opened in To Do:
+ * - not synced: the task is simply un-ticked;
+ * - synced and created here: To Do keeps the completed copy, and a new copy is added for today
+ *   (sent to To Do as a new task on the next sync);
+ * - anything that came from To Do is left alone — its repeats roll forward in To Do itself.
+ * Returns the same array when nothing changes.
  */
 export function resetDailyTasks(todos: Todo[], today = getTodayString()): Todo[] {
   let changed = false
+  const fresh: Todo[] = []
   const next = todos.map(t => {
-    // Only daily tasks that are this app's own get reset. Anything that came from To Do keeps To Do's
-    // state: its completed history must never be re-opened, and its repeats roll forward in To Do.
-    if (t.category !== 'daily' || !t.done || !t.completedAt || t.remoteSeries) return t
-    if (t.remoteId && !t.createdHere) return t
+    if (t.category !== 'daily' || !t.done || !t.completedAt || t.remoteSeries || t.rolledOver) return t
     if (toDateString(new Date(t.completedAt)) >= today) return t
+    if (!t.remoteId) {
+      changed = true
+      return { ...t, done: false, completedAt: undefined }
+    }
+    if (!t.createdHere) return t
     changed = true
-    return { ...t, done: false, completedAt: undefined }
+    fresh.push({
+      ...t,
+      id: crypto.randomUUID(),
+      done: false,
+      completedAt: undefined,
+      dueDate: t.dueDate ? today : undefined,
+      remoteId: undefined,
+      remoteModified: undefined,
+      remoteDue: undefined,
+      dirty: undefined,
+      isProject: false,
+      projectId: undefined,
+    })
+    return { ...t, rolledOver: true }
   })
-  return changed ? next : todos
+  return changed ? [...next, ...fresh] : todos
 }
 
 export function getNextDueDate(currentDueDate: string | undefined, recurrenceDays: RecurrenceDays): string {

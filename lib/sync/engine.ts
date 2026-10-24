@@ -327,6 +327,8 @@ async function applyRemote(mode: Mode, open: GraphTask[], listId: string, token:
       todos.push({ id: crypto.randomUUID(), ...newTaskFromGraph(r) })
       changed++
     } else if (!local.dirty && local.remoteModified !== r.lastModifiedDateTime) {
+      // A lagging read can return an older version than one this sync just wrote; never step backwards.
+      if (local.remoteModified && r.lastModifiedDateTime < local.remoteModified) continue
       todos = todos.map(t => (t.id === local.id ? { ...t, ...syncedFieldsFromGraph(r, t), dirty: false } : t))
       changed++
     }
@@ -463,7 +465,14 @@ async function syncOnce(): Promise<void> {
   const links = loadLinks()
   const modes = MODE_ORDER.filter(m => links[m])
   if (modes.length === 0) return
-  if (!(await getAccount())) {
+  let account
+  try {
+    account = await getAccount()
+  } catch (e) {
+    setStatus({ phase: 'signed-out', error: e instanceof Error ? e.message : String(e) })
+    return
+  }
+  if (!account) {
     setStatus({ phase: 'signed-out' })
     return
   }
@@ -538,11 +547,18 @@ export function requestSync(): Promise<void> {
     return running
   }
   running = (async () => {
-    do {
-      rerun = false
-      await syncOnce()
-    } while (rerun)
-    running = null
+    try {
+      do {
+        rerun = false
+        // One tab syncs at a time, so two open tabs can't both create the same new task in To Do.
+        const locks = typeof navigator !== 'undefined' ? navigator.locks : undefined
+        if (locks) await locks.request('arcade-sync', () => syncOnce())
+        else await syncOnce()
+      } while (rerun)
+    } finally {
+      // Whatever happened, the next request can start a fresh sync.
+      running = null
+    }
   })()
   return running
 }

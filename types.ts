@@ -30,6 +30,10 @@ export interface Todo {
    * morning; tasks from To Do keep To Do's state, including its completed history.
    */
   createdHere?: boolean
+  /** A synced daily task created here that has already been carried over to a fresh copy for a later day */
+  rolledOver?: boolean
+  /** The due date To Do last had for this task, so removing it in To Do can be told apart from a local-only date */
+  remoteDue?: string
   /** Microsoft To Do task id when this workspace is synced */
   remoteId?: string
   /** lastModifiedDateTime of the remote task when we last synced it */

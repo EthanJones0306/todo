@@ -8,7 +8,7 @@ import Sidebar, { SidebarProject, View } from '@/components/Sidebar'
 import SettingsModal, { SettingsTab } from '@/components/SettingsModal'
 import Icon from '@/components/Icon'
 import { LOCAL_CHANGE_EVENT, DATA_CHANGE_EVENT } from '@/lib/todos'
-import { getMsConfig, getMsal, signIn } from '@/lib/sync/msal'
+import { getMsConfig, getMsal, lastAccountHint, signIn } from '@/lib/sync/msal'
 import { loadLinks, pendingCount, requestSync, STATUS_EVENT } from '@/lib/sync/engine'
 import { formatAgo, useSyncStatus } from '@/lib/sync/useSync'
 
@@ -58,6 +58,17 @@ export default function AppShell({
   useEffect(() => {
     getMsal()?.catch(() => {})
   }, [])
+
+  // Sign-in renewal: Microsoft caps browser-app sign-ins at about a day. When a synced workspace finds
+  // itself signed out on a device that has signed in before, go back through Microsoft once per browser
+  // session. With an active Microsoft session that returns straight away, without asking anything.
+  useEffect(() => {
+    if (syncStatus.phase !== 'signed-out' || !loadLinks()[mode] || !lastAccountHint()) return
+    if (sessionStorage.getItem('arcade-auto-signin')) return
+    if (isTypingTarget(document.activeElement)) return
+    sessionStorage.setItem('arcade-auto-signin', '1')
+    signIn().catch(() => {})
+  }, [syncStatus.phase, mode])
 
   // Optional background sync: on load, shortly after local edits, on focus and every minute.
   useEffect(() => {

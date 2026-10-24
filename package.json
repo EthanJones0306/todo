@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "tsc -p tests/tsconfig.json && node tests/sync.test.js"
   },
   "dependencies": {
     "@azure/msal-browser": "^5.25.0",

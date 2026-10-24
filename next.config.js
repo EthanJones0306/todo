@@ -1,5 +1,5 @@
 const isProd = process.env.NODE_ENV === 'production'
-const MS_LOGIN = 'https://login.microsoftonline.com'
+const MS_LOGIN = 'https://login.microsoftonline.com https://login.microsoft.com'
 const MS_GRAPH = 'https://graph.microsoft.com'
 
 // Pages may only talk to this site, Microsoft sign-in and Microsoft Graph, so injected

@@ -5,13 +5,14 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Category, CATEGORY_LABEL, CATEGORY_ORDER, DAY_LABELS, Mode, RecurrenceDays, Todo } from '@/types'
 import { createProjectFromTodo, loadProjects } from '@/lib/storage'
-import { DATA_CHANGE_EVENT, loadMode, loadTodos, markDeleted, resetDailyTasks, saveMode, saveTodos, shouldShowToday, getNextDueDate } from '@/lib/todos'
-import { addDays, formatLongToday, formatRelativeDate, getTodayString, greeting, isDueToday, isOverdue, toDateString } from '@/lib/date'
+import { DATA_CHANGE_EVENT, loadMode, loadTodos, markDeleted, resetDailyTasks, saveMode, saveTodos, getNextDueDate } from '@/lib/todos'
+import { addDays, formatLongToday, formatRelativeDate, getTodayString, greeting, isDueToday, isOverdue } from '@/lib/date'
 import { Settings, useSettings } from '@/lib/settings'
 import { canReprioritise, Priority, priorityCompare, priorityLabel, reprioritise, withParsedTitle } from '@/lib/priority'
 import AppShell, { isTypingTarget } from '@/components/AppShell'
 import { ALL_VIEWS, View, VIEW_LABEL } from '@/components/Sidebar'
 import Icon from '@/components/Icon'
+import { buildViewContext, inView, isPeriodCategory, PeriodCategory } from '@/lib/views'
 import { ConfirmDialog, Kbd, Menu, MenuItem, MenuLabel, MenuSeparator, Toast, ToastData } from '@/components/ui'
 
 const REPEAT_LABEL: Record<Category, string> = { ...CATEGORY_LABEL, custom: 'Custom days' }
@@ -20,15 +21,6 @@ function orderedDays(weekStartsOn: 0 | 1): number[] {
   return weekStartsOn === 1 ? [1, 2, 3, 4, 5, 6, 0] : [0, 1, 2, 3, 4, 5, 6]
 }
 
-function matchesView(t: Todo, view: View): boolean {
-  if (view === 'today') return shouldShowToday(t.dueDate, t.recurrenceDays)
-  if (view === 'upcoming') return !!t.dueDate && t.dueDate > getTodayString()
-  if (view === 'all') return true
-  // Daily is today's list: copies due on a later day (e.g. To Do's next copy) wait until their day.
-  // Overdue ones stay, since To Do only creates the next copy once one is ticked off.
-  if (view === 'daily') return t.category === 'daily' && !(t.dueDate && t.dueDate > getTodayString())
-  return t.category === view
-}
 
 function sortTodos(list: Todo[], sort: Settings['sort']): Todo[] {
   // Array.prototype.sort is stable, so equal priorities keep their manual order.
@@ -69,31 +61,52 @@ export default function Home() {
   const searchRef = useRef<HTMLInputElement>(null)
   const composerDateRef = useRef<HTMLInputElement>(null)
 
+  const modeRef = useRef(mode)
+  modeRef.current = mode
+
+  /**
+   * The only way the page changes tasks: apply the change to the latest stored tasks (never to this
+   * page's copy, which a sync may have overtaken), save, and show the result. A stale copy can never be
+   * written back, so a sync result is never undone and nothing is sent to To Do by mistake.
+   */
+  const commit = useCallback((change: (current: Todo[]) => Todo[]) => {
+    const m = modeRef.current
+    const current = loadTodos(m)
+    const next = change(current)
+    if (next !== current) saveTodos(m, next)
+    setTodos(loadTodos(m))
+  }, [])
+
   useEffect(() => {
     const m = loadMode()
     setMode(m)
-    setTodos(resetDailyTasks(loadTodos(m)))
+    modeRef.current = m
+    const stored = loadTodos(m)
+    const reset = resetDailyTasks(stored)
+    if (reset !== stored) saveTodos(m, reset)
+    setTodos(loadTodos(m))
     const param = new URLSearchParams(window.location.search).get('view') as View | null
     if (param && ALL_VIEWS.includes(param)) setView(param)
     setMounted(true)
   }, [])
 
+  // Show changes made by sync, or by this app in another tab.
   useEffect(() => {
-    if (mounted) saveTodos(mode, todos)
-  }, [todos, mode, mounted])
-
-  // Pick up changes pulled from Microsoft To Do.
-  const modeRef = useRef(mode)
-  modeRef.current = mode
-  useEffect(() => {
-    const reload = () => setTodos(resetDailyTasks(loadTodos(modeRef.current)))
+    const reload = () => setTodos(loadTodos(modeRef.current))
+    const onStorage = (e: StorageEvent) => {
+      if (!e.key || e.key.startsWith('arcade-todos-')) reload()
+    }
     window.addEventListener(DATA_CHANGE_EVENT, reload)
-    return () => window.removeEventListener(DATA_CHANGE_EVENT, reload)
+    window.addEventListener('storage', onStorage)
+    return () => {
+      window.removeEventListener(DATA_CHANGE_EVENT, reload)
+      window.removeEventListener('storage', onStorage)
+    }
   }, [])
 
-  // A new day un-ticks yesterday's daily tasks — checked when the app is opened, refocused, or left open past midnight.
+  // A new day refreshes daily tasks created here — checked when the app is opened, refocused, or left open past midnight.
   useEffect(() => {
-    const check = () => setTodos(prev => resetDailyTasks(prev))
+    const check = () => commit(current => resetDailyTasks(current))
     const onVisible = () => document.visibilityState === 'visible' && check()
     const tick = setInterval(check, 60000)
     window.addEventListener('focus', check)
@@ -103,7 +116,7 @@ export default function Home() {
       window.removeEventListener('focus', check)
       document.removeEventListener('visibilitychange', onVisible)
     }
-  }, [])
+  }, [commit])
 
   useEffect(() => {
     setNewCategory(settings.defaultCategory)
@@ -122,7 +135,8 @@ export default function Home() {
     if (next === mode) return
     saveMode(next)
     setMode(next)
-    setTodos(resetDailyTasks(loadTodos(next)))
+    modeRef.current = next
+    commit(current => resetDailyTasks(current))
     setEditingId(null)
   }
 
@@ -146,7 +160,7 @@ export default function Home() {
       recurrenceDays: newCategory === 'custom' && newRecurrenceDays.length > 0 ? newRecurrenceDays : undefined,
       ...newPriority,
     })
-    setTodos(prev => [...prev, todo])
+    commit(current => [...current, todo])
     setInput('')
     setNewDueDate('')
     setNewPriority({})
@@ -158,7 +172,7 @@ export default function Home() {
       setJustCompleted(id)
       setTimeout(() => setJustCompleted(c => (c === id ? null : c)), 600)
     }
-    setTodos(prev => {
+    commit(prev => {
       const todo = prev.find(t => t.id === id)
       if (!todo) return prev
       const newDone = !todo.done
@@ -180,15 +194,16 @@ export default function Home() {
   }
 
   const patchTodo = (id: string, patch: Partial<Todo>) => {
-    setTodos(prev => prev.map(t => (t.id === id ? { ...t, ...patch } : t)))
+    commit(prev => prev.map(t => (t.id === id ? { ...t, ...patch } : t)))
   }
 
   const performDelete = (todo: Todo) => {
     const index = todos.findIndex(t => t.id === todo.id)
     markDeleted(mode, [todo])
-    setTodos(prev => prev.filter(t => t.id !== todo.id))
+    commit(prev => prev.filter(t => t.id !== todo.id))
     showToast('Task deleted', () =>
-      setTodos(prev => {
+      commit(prev => {
+        if (prev.some(t => t.id === todo.id)) return prev
         const next = [...prev]
         next.splice(Math.min(index, next.length), 0, todo)
         return next
@@ -215,7 +230,7 @@ export default function Home() {
       remoteModified: undefined,
       dirty: undefined,
     }
-    setTodos(prev => {
+    commit(prev => {
       const i = prev.findIndex(t => t.id === todo.id)
       const next = [...prev]
       next.splice(i + 1, 0, copy)
@@ -224,7 +239,7 @@ export default function Home() {
   }
 
   const moveToTop = (id: string) => {
-    setTodos(prev => {
+    commit(prev => {
       const item = prev.find(t => t.id === id)
       return item ? [item, ...prev.filter(t => t.id !== id)] : prev
     })
@@ -232,7 +247,7 @@ export default function Home() {
 
   const moveBefore = (sourceId: string, targetId: string) => {
     if (sourceId === targetId) return
-    setTodos(prev => {
+    commit(prev => {
       const from = prev.findIndex(t => t.id === sourceId)
       if (from === -1) return prev
       const next = [...prev]
@@ -245,10 +260,10 @@ export default function Home() {
 
   /** Priority sort: dropping a task onto another takes that task's place and priority, then tells you what changed. */
   const moveByPriority = (movedId: string, targetId: string) => {
-    const before = todos
-    const after = reprioritise(todos, movedId, targetId)
+    const before = loadTodos(modeRef.current)
+    const after = reprioritise(before, movedId, targetId)
     if (after === before) return
-    setTodos(after)
+    commit(() => after)
     const moved = after.find(t => t.id === movedId)!
     const wasLabel = priorityLabel(before.find(t => t.id === movedId)!)
     const nowLabel = priorityLabel(moved)
@@ -257,14 +272,17 @@ export default function Home() {
     // Reordering within the same level (e.g. two High tasks) changes nothing in To Do, so stay quiet.
     if (wasLabel === nowLabel && others === 0) return
     const renumbered = others ? ` · ${others} other${others === 1 ? '' : 's'} renumbered` : ''
-    showToast(`“${moved.text}” → ${nowLabel ?? 'no priority'}${renumbered}`, () => setTodos(before))
+    // Undo puts back only the priorities this move changed, on top of whatever has happened since.
+    const oldLevel = new Map(before.map(t => [t.id, { rank: t.rank, priority: t.priority }]))
+    const touched = new Set(after.filter(t => t !== before.find(b => b.id === t.id)).map(t => t.id))
+    showToast(`“${moved.text}” → ${nowLabel ?? 'no priority'}${renumbered}`, () =>
+      commit(prev => prev.map(t => (touched.has(t.id) ? { ...t, ...oldLevel.get(t.id) } : t)))
+    )
   }
 
   const convertToProject = (todo: Todo) => {
     const project = createProjectFromTodo(mode, todo)
-    const next = todos.map(t => (t.id === todo.id ? { ...t, isProject: true, projectId: project.id } : t))
-    saveTodos(mode, next)
-    setTodos(next)
+    commit(prev => prev.map(t => (t.id === todo.id ? { ...t, isProject: true, projectId: project.id } : t)))
     router.push(`/project/${project.id}`)
   }
 
@@ -283,13 +301,14 @@ export default function Home() {
     setEditingId(null)
   }
 
+  /** Removes completed tasks from this app only — To Do keeps its history. */
   const clearCompleted = () => {
-    const removed = todos.filter(t => t.done && t.category !== 'daily' && matchesView(t, view))
+    const removed = completedTodos.filter(t => t.category !== 'daily')
     const ids = new Set(removed.map(t => t.id))
-    const before = todos
-    markDeleted(mode, removed)
-    setTodos(prev => prev.filter(t => !ids.has(t.id)))
-    showToast(`Cleared ${removed.length} completed`, () => setTodos(before))
+    commit(prev => prev.filter(t => !ids.has(t.id)))
+    showToast(`Cleared ${removed.length} completed`, () =>
+      commit(prev => [...prev, ...removed.filter(r => !prev.some(t => t.id === r.id))])
+    )
   }
 
   /* ---------- Keyboard ---------- */
@@ -319,23 +338,28 @@ export default function Home() {
     [mode, todos]
   )
 
+  const viewCtx = useMemo(() => buildViewContext(todos, settings.weekStartsOn), [todos, settings.weekStartsOn])
+
   const counts = useMemo(() => {
     const c: Partial<Record<View, number>> = {}
-    for (const v of ALL_VIEWS) c[v] = todos.filter(t => !t.done && matchesView(t, v)).length
+    for (const v of ALL_VIEWS) c[v] = todos.filter(t => !t.done && inView(t, v, viewCtx)).length
     return c
-  }, [todos])
+  }, [todos, viewCtx])
 
   const query = search.trim().toLowerCase()
-  const inView = todos.filter(t => matchesView(t, view) && (!query || t.text.toLowerCase().includes(query)))
-  const activeTodos = sortTodos(inView.filter(t => !t.done), view === 'upcoming' ? 'due' : settings.sort)
-  const completedTodos = inView
-    // The Daily list is about today: older completed copies (e.g. To Do's repeating tasks) stay out of it.
-    .filter(t => t.done && (view !== 'daily' || (!!t.completedAt && toDateString(new Date(t.completedAt)) === getTodayString())))
-    .sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? ''))
+  const periodView = isPeriodCategory(view)
+  const shown = todos.filter(t => inView(t, view, viewCtx) && (!query || t.text.toLowerCase().includes(query)))
+  const activeTodos = sortTodos(shown.filter(t => !t.done), view === 'upcoming' ? 'due' : settings.sort)
+  // Daily/Weekly/Monthly are "what's left" lists: ticked tasks leave and don't come back until next period.
+  const completedTodos = periodView
+    ? []
+    : shown.filter(t => t.done).sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? ''))
   const overdueCount = activeTodos.filter(t => isOverdue(t.dueDate)).length
   const clearableCount = completedTodos.filter(t => t.category !== 'daily').length
+  const periodDone = periodView ? viewCtx.doneInPeriod[view as PeriodCategory] : 0
+  const periodTotal = periodDone + activeTodos.length
+  const progress = periodTotal ? periodDone / periodTotal : 0
   const viewTotal = activeTodos.length + completedTodos.length
-  const progress = viewTotal ? completedTodos.length / viewTotal : 0
   const prioritySort = settings.sort === 'priority' && view !== 'upcoming'
   const canDrag = (settings.sort === 'manual' || prioritySort) && view !== 'upcoming' && !query
   const dragIndex = draggingId ? activeTodos.findIndex(t => t.id === draggingId) : -1
@@ -456,10 +480,13 @@ export default function Home() {
   }
 
   const title = !mounted ? '\u00a0' : view === 'today' ? `${greeting()}${settings.name ? `, ${settings.name}` : ''}` : VIEW_LABEL[view]
+  const periodWord = view === 'daily' ? 'today' : view === 'weekly' ? 'this week' : 'this month'
   const subtitle =
     activeTodos.length === 0
       ? view === 'today'
         ? 'Nothing left for today. Enjoy it.'
+        : periodView && periodDone > 0
+        ? `All done ${periodWord}.`
         : 'Nothing here right now.'
       : `${activeTodos.length} task${activeTodos.length === 1 ? '' : 's'} to go${overdueCount ? ` · ${overdueCount} overdue` : ''}`
 
@@ -471,7 +498,7 @@ export default function Home() {
       onSelectView={selectView}
       counts={counts}
       refreshKey={todos}
-      onDataChanged={() => setTodos(loadTodos(mode))}
+      onDataChanged={() => setTodos(loadTodos(modeRef.current))}
       topbarTitle={VIEW_LABEL[view]}
     >
       <div className="content">
@@ -481,13 +508,13 @@ export default function Home() {
             <h1 className="page-title">{title}</h1>
             <p className="page-subtitle">{mounted ? subtitle : ' '}</p>
           </div>
-          {view === 'daily' && viewTotal > 0 && (
-            <div className="daily-progress" title="Daily tasks reset each morning">
+          {periodView && periodTotal > 0 && (
+            <div className="daily-progress">
               <div className="daily-progress-bar" aria-hidden="true">
                 <span style={{ width: `${progress * 100}%` }} />
               </div>
               <span>
-                {completedTodos.length} of {viewTotal} done today
+                {periodDone} of {periodTotal} done {view === 'daily' ? 'today' : view === 'weekly' ? 'this week' : 'this month'}
               </span>
             </div>
           )}
@@ -653,7 +680,19 @@ export default function Home() {
           </div>
         </div>
 
-        {!mounted ? null : activeTodos.length === 0 && completedTodos.length === 0 ? (
+        {!mounted ? null : periodView && activeTodos.length === 0 && periodDone > 0 && !query ? (
+          <div className="all-done">
+            <div className="all-done-icon">
+              <Icon name="sparkles" size={18} />
+            </div>
+            <div>
+              <div className="all-done-title">All done {periodWord}</div>
+              <div className="muted">
+                {periodDone} {view} task{periodDone === 1 ? '' : 's'} ticked off. They’ll be back {view === 'daily' ? 'tomorrow' : view === 'weekly' ? 'next week' : 'next month'}.
+              </div>
+            </div>
+          </div>
+        ) : activeTodos.length === 0 && completedTodos.length === 0 ? (
           <EmptyState view={view} searching={!!query} />
         ) : (
           <>

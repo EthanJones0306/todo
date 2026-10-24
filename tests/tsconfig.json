@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "commonjs",
+    "outDir": ".build",
+    "rootDir": "..",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "jsx": "react-jsx",
+    "lib": ["dom", "es2020"],
+    "baseUrl": "..",
+    "paths": { "@/*": ["./*"] }
+  },
+  "files": [
+    "../lib/sync/engine.ts",
+    "../lib/sync/mapping.ts",
+    "../lib/sync/graph.ts",
+    "../lib/storage.ts",
+    "../lib/todos.ts",
+    "../lib/priority.ts",
+    "../lib/views.ts",
+    "../lib/date.ts",
+    "../types.ts"
+  ]
+}

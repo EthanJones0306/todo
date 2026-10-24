@@ -28,8 +28,9 @@ export function syncedFieldsFromGraph(task: GraphTask, current: Todo): Partial<T
     // z_/zz_/zzz_ set daily/weekly/monthly; removing it in To Do makes the task a one-off. Custom stays local.
     category: p.repeat ?? (repeatPrefixOf(current.category) ? 'once' : current.category),
     recurrenceDays: p.repeat ? undefined : current.recurrenceDays,
-    // A due date set or moved in To Do comes across; one set only here is kept when To Do has none.
-    dueDate: localDate(task.dueDateTime) ?? current.dueDate,
+    // A due date set, moved or removed in To Do comes across; one set only here is kept.
+    dueDate: localDate(task.dueDateTime) ?? (current.dueDate === current.remoteDue ? undefined : current.dueDate),
+    remoteDue: localDate(task.dueDateTime),
     done,
     completedAt: done ? current.completedAt ?? utcToIso(task.completedDateTime) ?? new Date().toISOString() : undefined,
     remoteId: task.id,
@@ -53,6 +54,7 @@ export function newTaskFromGraph(task: GraphTask): Omit<Todo, 'id'> {
     done,
     category: p.repeat ?? 'once',
     dueDate: due,
+    remoteDue: due,
     completedAt: done ? utcToIso(task.completedDateTime) ?? new Date().toISOString() : undefined,
     remoteId: task.id,
     remoteModified: task.lastModifiedDateTime,

@@ -8,7 +8,9 @@ const loadMsal = () => import('@azure/msal-browser')
 // Least privilege: only To Do access. Sign-in itself adds openid/profile automatically.
 export const SCOPES = ['Tasks.ReadWrite']
 const CONFIG_KEY = 'arcade-ms-config'
-// Remembers only *that* this device was connected (no account details), so we can try a silent sign-in.
+// The account last signed in on this device, so renewing sign-in can skip the account picker.
+const HINT_KEY = 'arcade-ms-hint'
+// Older builds stored only a flag; kept so it can be cleaned up on sign-out.
 const CONNECTED_KEY = 'arcade-ms-connected'
 
 export interface MsConfig {
@@ -53,7 +55,7 @@ export function getMsal(): Promise<PublicClientApplication> | null {
   const key = `${cfg.clientId}|${cfg.tenantId}`
   if (!instance || key !== instanceKey) {
     instanceKey = key
-    instance = (async () => {
+    const starting = (async () => {
       const { PublicClientApplication } = await loadMsal()
       const pca = new PublicClientApplication({
         auth: {
@@ -62,25 +64,31 @@ export function getMsal(): Promise<PublicClientApplication> | null {
           redirectUri: redirectUri(),
           postLogoutRedirectUri: `${window.location.origin}/`,
         },
-        // Work tokens live only for this browser session, never in persistent storage.
-        cache: { cacheLocation: 'sessionStorage' },
+        // Kept across tabs and restarts so you stay signed in. Tokens only grant Tasks.ReadWrite, and the
+        // site's Content-Security-Policy only lets pages talk to Microsoft, so they can't be sent elsewhere.
+        cache: { cacheLocation: 'localStorage' },
       })
       await pca.initialize()
       const result = await pca.handleRedirectPromise()
       if (result?.account) pca.setActiveAccount(result.account)
       else if (!pca.getActiveAccount() && pca.getAllAccounts()[0]) pca.setActiveAccount(pca.getAllAccounts()[0])
-      if (pca.getActiveAccount()) localStorage.setItem(CONNECTED_KEY, '1')
-      else if (localStorage.getItem(CONNECTED_KEY)) {
-        // New browser session: reuse the existing Microsoft sign-in without prompting, if the browser allows it.
-        try {
-          const silent = await pca.ssoSilent({ scopes: SCOPES })
-          pca.setActiveAccount(silent.account)
-        } catch {}
-      }
+      const active = pca.getActiveAccount()
+      if (active) localStorage.setItem(HINT_KEY, active.username)
       return pca
     })()
+    // A failed start (cancelled sign-in, offline) must not be cached forever: the next call tries again.
+    const attempt: Promise<PublicClientApplication> = starting.catch(e => {
+      if (instance === attempt) instance = null
+      throw e
+    })
+    instance = attempt
   }
   return instance
+}
+
+/** The account to sign back in as, if this device has signed in before. */
+export function lastAccountHint(): string | null {
+  return typeof window === 'undefined' ? null : localStorage.getItem(HINT_KEY)
 }
 
 export async function getAccount(): Promise<AccountInfo | null> {
@@ -88,15 +96,21 @@ export async function getAccount(): Promise<AccountInfo | null> {
   return pca?.getActiveAccount() ?? null
 }
 
+/**
+ * Sign in via a full-page redirect to Microsoft. When this device has signed in before, it goes straight
+ * back to that account: if your Microsoft session is still active, it returns without asking anything.
+ */
 export async function signIn(): Promise<void> {
   const pca = await getMsal()
-  await pca?.loginRedirect({ scopes: SCOPES, prompt: 'select_account' })
+  const hint = lastAccountHint()
+  await pca?.loginRedirect(hint ? { scopes: SCOPES, loginHint: hint } : { scopes: SCOPES, prompt: 'select_account' })
 }
 
 export async function signOut(): Promise<void> {
   const pca = await getMsal()
   if (!pca) return
   localStorage.removeItem(CONNECTED_KEY)
+  localStorage.removeItem(HINT_KEY)
   await pca.logoutRedirect({ account: pca.getActiveAccount() ?? undefined })
 }
 

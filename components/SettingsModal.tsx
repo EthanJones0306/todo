@@ -4,7 +4,7 @@ import { ReactNode, useRef, useState } from 'react'
 import { CATEGORY_LABEL, CATEGORY_ORDER, Category, Mode, MODE_LABEL } from '@/types'
 import { Settings, ThemeChoice } from '@/lib/settings'
 import { THEMES } from '@/lib/themes'
-import { loadTodos, markDeleted, saveTodos } from '@/lib/todos'
+import { loadTodos, saveTodos } from '@/lib/todos'
 import Icon, { IconName } from '@/components/Icon'
 import { ConfirmDialog, Kbd, Modal, Segmented, Switch } from '@/components/ui'
 import SyncSettings from '@/components/SyncSettings'
@@ -98,7 +98,7 @@ export default function SettingsModal({ initialTab = 'appearance', settings, onC
   const runConfirm = () => {
     if (confirm === 'clear') {
       const all = loadTodos(mode)
-      markDeleted(mode, all.filter(isClearable))
+      // Only from this app — To Do keeps its completed history.
       saveTodos(mode, all.filter(t => !isClearable(t)))
       onDataChanged()
       flash('Completed tasks cleared')
@@ -337,7 +337,7 @@ export default function SettingsModal({ initialTab = 'appearance', settings, onC
           title={confirm === 'clear' ? 'Clear completed tasks?' : confirm === 'reset' ? 'Reset everything?' : 'Import backup?'}
           body={
             confirm === 'clear'
-              ? `This permanently removes ${completedCount} completed task${completedCount === 1 ? '' : 's'} from ${MODE_LABEL[mode]}.`
+              ? `Removes ${completedCount} completed task${completedCount === 1 ? '' : 's'} from ${MODE_LABEL[mode]} in this app. Synced tasks stay completed in Microsoft To Do.`
               : confirm === 'reset'
               ? 'All tasks, projects and settings will be permanently deleted. Export a backup first if you might need them.'
               : 'Your current tasks, projects and settings will be replaced by the backup.'
