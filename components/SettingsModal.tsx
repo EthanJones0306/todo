@@ -1,10 +1,11 @@
 'use client'
 
 import { ReactNode, useRef, useState } from 'react'
-import { CATEGORY_LABEL, CATEGORY_ORDER, Category, Mode, MODE_LABEL } from '@/types'
+import { CATEGORY_LABEL, CATEGORY_ORDER, Category, Mode, MODE_LABEL, Todo } from '@/types'
 import { Settings, ThemeChoice } from '@/lib/settings'
 import { THEMES } from '@/lib/themes'
-import { loadTodos, saveTodos } from '@/lib/todos'
+import { isClearable, loadTodos, saveTodos } from '@/lib/todos'
+import { loadLinks } from '@/lib/sync/engine'
 import Icon, { IconName } from '@/components/Icon'
 import { ConfirmDialog, Kbd, Modal, Segmented, Switch } from '@/components/ui'
 import SyncSettings from '@/components/SyncSettings'
@@ -92,14 +93,16 @@ export default function SettingsModal({ initialTab = 'appearance', settings, onC
   }
 
   // Daily tasks reset each day rather than being cleared.
-  const isClearable = (t: { done: boolean; category: string }) => t.done && t.category !== 'daily'
-  const completedCount = loadTodos(mode).filter(isClearable).length
+  // Never daily tasks (they come back) or ticks that haven't reached To Do yet (they'd come back open).
+  const synced = !!loadLinks()[mode]
+  const clearable = (t: Todo) => isClearable(t, synced)
+  const completedCount = loadTodos(mode).filter(clearable).length
 
   const runConfirm = () => {
     if (confirm === 'clear') {
       const all = loadTodos(mode)
       // Only from this app — To Do keeps its completed history.
-      saveTodos(mode, all.filter(t => !isClearable(t)))
+      saveTodos(mode, all.filter(t => !clearable(t)))
       onDataChanged()
       flash('Completed tasks cleared')
     } else if (confirm === 'reset') {

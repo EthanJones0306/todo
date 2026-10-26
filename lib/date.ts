@@ -58,3 +58,18 @@ export function greeting(): string {
 export function formatLongToday(): string {
   return new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
 }
+
+/** First and last day (inclusive, YYYY-MM-DD) of the day, week or month containing `today`. */
+export function periodBounds(period: 'daily' | 'weekly' | 'monthly', weekStartsOn: 0 | 1, today = getTodayString()): { start: string; end: string } {
+  if (period === 'daily') return { start: today, end: today }
+  if (period === 'weekly') {
+    const back = (parseDate(today).getDay() - weekStartsOn + 7) % 7
+    const start = addDays(today, -back)
+    return { start, end: addDays(start, 6) }
+  }
+  const d = parseDate(today)
+  return {
+    start: toDateString(new Date(d.getFullYear(), d.getMonth(), 1)),
+    end: toDateString(new Date(d.getFullYear(), d.getMonth() + 1, 0)),
+  }
+}

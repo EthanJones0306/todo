@@ -1,7 +1,7 @@
 'use client'
 
 import { Category, CATEGORY_ORDER, Mode, MODE_ORDER, RecurrenceDays, Todo } from '@/types'
-import { addDays, getTodayString, parseDate, toDateString } from '@/lib/date'
+import { addDays, getTodayString, parseDate, periodBounds, toDateString } from '@/lib/date'
 import { repeatPrefixOf, withParsedTitle } from '@/lib/priority'
 
 const TODOS_KEY = (mode: Mode) => `arcade-todos-${mode}`
@@ -64,6 +64,7 @@ export function saveTodos(mode: Mode, todos: Todo[]): void {
       remoteId,
       remoteModified: remoteId ? old?.remoteModified ?? t.remoteModified : undefined,
       dirty: remoteId ? edited || !!old?.dirty : undefined,
+      doneChanged: remoteId ? !!old && (!!old.doneChanged || old.done !== t.done) : undefined,
     }
   })
 
@@ -110,20 +111,32 @@ export function shouldShowToday(dueDate?: string, recurrenceDays?: RecurrenceDay
   return recurrenceDays.includes(parseDate(today).getDay())
 }
 
+/** The week-start setting, read directly so sync code doesn't need the React settings hook. */
+function weekStart(): 0 | 1 {
+  try {
+    return JSON.parse(localStorage.getItem('arcade-settings') || '{}').weekStartsOn === 0 ? 0 : 1
+  } catch {
+    return 1
+  }
+}
+
 /**
- * Each morning, daily tasks created in this app start fresh. Completed tasks are never re-opened in To Do:
+ * Each new day, week or month, daily/weekly/monthly tasks created in this app start fresh. Completed
+ * tasks are never re-opened in To Do:
  * - not synced: the task is simply un-ticked;
- * - synced and created here: To Do keeps the completed copy, and a new copy is added for today
+ * - synced and created here: To Do keeps the completed copy, and a new copy is added for the new period
  *   (sent to To Do as a new task on the next sync);
  * - anything that came from To Do is left alone — its repeats roll forward in To Do itself.
  * Returns the same array when nothing changes.
  */
-export function resetDailyTasks(todos: Todo[], today = getTodayString()): Todo[] {
+export function resetRepeatingTasks(todos: Todo[], today = getTodayString(), weekStartsOn: 0 | 1 = weekStart()): Todo[] {
   let changed = false
   const fresh: Todo[] = []
   const next = todos.map(t => {
-    if (t.category !== 'daily' || !t.done || !t.completedAt || t.remoteSeries || t.rolledOver) return t
-    if (toDateString(new Date(t.completedAt)) >= today) return t
+    const period = t.category === 'daily' || t.category === 'weekly' || t.category === 'monthly' ? t.category : null
+    if (!period || !t.done || !t.completedAt || t.remoteSeries || t.rolledOver) return t
+    const { start } = periodBounds(period, weekStartsOn, today)
+    if (toDateString(new Date(t.completedAt)) >= start) return t
     if (!t.remoteId) {
       changed = true
       return { ...t, done: false, completedAt: undefined }
@@ -140,6 +153,9 @@ export function resetDailyTasks(todos: Todo[], today = getTodayString()): Todo[]
       remoteModified: undefined,
       remoteDue: undefined,
       dirty: undefined,
+      doneChanged: undefined,
+      lastCompletedAt: undefined,
+      lastCompletedDue: undefined,
       isProject: false,
       projectId: undefined,
     })
@@ -158,3 +174,70 @@ export function getNextDueDate(currentDueDate: string | undefined, recurrenceDay
 }
 
 export { toDateString }
+
+/**
+ * Tick or untick a task. Ticking a custom-days task also adds its next occurrence; unticking takes that
+ * copy back again. Returns the new list and the copies removed (to delete in To Do if they got there).
+ */
+export function toggleDone(todos: Todo[], id: string, now = new Date().toISOString()): { next: Todo[]; removed: Todo[] } {
+  const todo = todos.find(t => t.id === id)
+  if (!todo) return { next: todos, removed: [] }
+  const newDone = !todo.done
+  if (newDone && todo.category !== 'once' && todo.recurrenceDays && todo.recurrenceDays.length > 0) {
+    const nextTodo: Todo = {
+      ...todo,
+      id: crypto.randomUUID(),
+      createdHere: true,
+      done: false,
+      dueDate: getNextDueDate(todo.dueDate, todo.recurrenceDays),
+      completedAt: undefined,
+      originalId: todo.originalId || todo.id,
+      spawnedBy: todo.id,
+      remoteId: undefined,
+      remoteModified: undefined,
+      remoteDue: undefined,
+      dirty: undefined,
+      doneChanged: undefined,
+    }
+    return { next: todos.map(t => (t.id === id ? { ...t, done: true, completedAt: now } : t)).concat(nextTodo), removed: [] }
+  }
+  const removed = newDone ? [] : todos.filter(t => t.spawnedBy === id && !t.done)
+  return {
+    next: todos
+      .filter(t => !removed.includes(t))
+      .map(t => (t.id === id ? { ...t, done: newDone, completedAt: newDone ? now : undefined } : t)),
+    removed,
+  }
+}
+
+/** A fresh, independent copy of a task: same wording and settings, none of the original's sync history. */
+export function duplicateOf(todo: Todo): Todo {
+  return {
+    ...todo,
+    id: crypto.randomUUID(),
+    createdHere: true,
+    done: false,
+    completedAt: undefined,
+    isProject: false,
+    projectId: undefined,
+    remoteId: undefined,
+    remoteModified: undefined,
+    remoteDue: undefined,
+    remoteSeries: undefined,
+    dirty: undefined,
+    doneChanged: undefined,
+    lastCompletedAt: undefined,
+    lastCompletedDue: undefined,
+    rolledOver: undefined,
+    originalId: undefined,
+    spawnedBy: undefined,
+  }
+}
+
+/**
+ * Whether "Clear completed" may remove a task from the app: never a daily one (they come back), and
+ * never a tick that hasn't reached To Do yet — clearing it would bring it back open on the next sync.
+ */
+export function isClearable(t: Todo, synced: boolean): boolean {
+  return t.done && t.category !== 'daily' && !t.dirty && !(synced && !t.remoteId)
+}

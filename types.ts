@@ -35,6 +35,15 @@ export interface Todo {
    * and moves its due date to the next occurrence, so this is what says "done for this period".
    */
   lastCompletedAt?: string
+  /** The due date of the occurrence last ticked off (so an overdue tick isn't mistaken for this period's) */
+  lastCompletedDue?: string
+  /**
+   * Done/not-done was changed here since the last sync, so To Do needs to hear it. Other edits (title,
+   * priority, drag) never send a status, so they can't overwrite a tick made in To Do meanwhile.
+   */
+  doneChanged?: boolean
+  /** The task whose tick created this custom-days copy (so unticking it can take the copy back) */
+  spawnedBy?: string
   /** A synced daily task created here that has already been carried over to a fresh copy for a later day */
   rolledOver?: boolean
   /** The due date To Do last had for this task, so removing it in To Do can be told apart from a local-only date */

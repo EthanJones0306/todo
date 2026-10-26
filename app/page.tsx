@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Category, CATEGORY_LABEL, CATEGORY_ORDER, DAY_LABELS, Mode, RecurrenceDays, Todo } from '@/types'
 import { createProjectFromTodo, loadProjects } from '@/lib/storage'
-import { DATA_CHANGE_EVENT, loadMode, loadTodos, markDeleted, resetDailyTasks, saveMode, saveTodos, getNextDueDate } from '@/lib/todos'
+import { DATA_CHANGE_EVENT, duplicateOf, isClearable, loadDeleted, loadMode, loadTodos, markDeleted, resetRepeatingTasks, toggleDone, saveMode, saveTodos, getNextDueDate } from '@/lib/todos'
 import { addDays, formatLongToday, formatRelativeDate, getTodayString, greeting, isDueToday, isOverdue } from '@/lib/date'
 import { Settings, useSettings } from '@/lib/settings'
 import { canReprioritise, Priority, priorityCompare, priorityLabel, reprioritise, withParsedTitle } from '@/lib/priority'
@@ -13,6 +13,7 @@ import AppShell, { isTypingTarget } from '@/components/AppShell'
 import { ALL_VIEWS, View, VIEW_LABEL } from '@/components/Sidebar'
 import Icon from '@/components/Icon'
 import { useSortable } from '@/components/useSortable'
+import { loadLinks } from '@/lib/sync/engine'
 import { buildViewContext, inView, isPeriodCategory, PeriodCategory } from '@/lib/views'
 import { ConfirmDialog, Kbd, Menu, MenuItem, MenuLabel, MenuSeparator, Toast, ToastData } from '@/components/ui'
 
@@ -83,7 +84,7 @@ export default function Home() {
     setMode(m)
     modeRef.current = m
     const stored = loadTodos(m)
-    const reset = resetDailyTasks(stored)
+    const reset = resetRepeatingTasks(stored)
     if (reset !== stored) saveTodos(m, reset)
     setTodos(loadTodos(m))
     const param = new URLSearchParams(window.location.search).get('view') as View | null
@@ -107,7 +108,7 @@ export default function Home() {
 
   // A new day refreshes daily tasks created here — checked when the app is opened, refocused, or left open past midnight.
   useEffect(() => {
-    const check = () => commit(current => resetDailyTasks(current))
+    const check = () => commit(current => resetRepeatingTasks(current))
     const onVisible = () => document.visibilityState === 'visible' && check()
     const tick = setInterval(check, 60000)
     window.addEventListener('focus', check)
@@ -137,7 +138,7 @@ export default function Home() {
     saveMode(next)
     setMode(next)
     modeRef.current = next
-    commit(current => resetDailyTasks(current))
+    commit(current => resetRepeatingTasks(current))
     setEditingId(null)
   }
 
@@ -169,28 +170,21 @@ export default function Home() {
 
   const toggleTodo = (id: string) => {
     const todo = todos.find(t => t.id === id)
+    // Already done for this period (To Do keeps repeating tasks open with their next due date):
+    // ticking again would use up the next occurrence, so just say so.
+    if (todo && viewCtx.doneThisPeriod(todo)) {
+      const word = todo.category === 'daily' ? 'today' : todo.category === 'weekly' ? 'this week' : 'this month'
+      showToast(`Already done ${word}${todo.dueDate ? ` — next due ${formatRelativeDate(todo.dueDate).toLowerCase()}` : ''}`)
+      return
+    }
     if (todo && !todo.done) {
       setJustCompleted(id)
       setTimeout(() => setJustCompleted(c => (c === id ? null : c)), 600)
     }
     commit(prev => {
-      const todo = prev.find(t => t.id === id)
-      if (!todo) return prev
-      const newDone = !todo.done
-      const now = new Date().toISOString()
-      if (newDone && todo.category !== 'once' && todo.recurrenceDays && todo.recurrenceDays.length > 0) {
-        const nextTodo: Todo = {
-          ...todo,
-          id: crypto.randomUUID(),
-          createdHere: true,
-          done: false,
-          dueDate: getNextDueDate(todo.dueDate, todo.recurrenceDays),
-          completedAt: undefined,
-          originalId: todo.originalId || todo.id,
-        }
-        return prev.map(t => (t.id === id ? { ...t, done: true, completedAt: now } : t)).concat(nextTodo)
-      }
-      return prev.map(t => (t.id === id ? { ...t, done: newDone, completedAt: newDone ? now : undefined } : t))
+      const { next, removed } = toggleDone(prev, id)
+      if (removed.length) markDeleted(modeRef.current, removed)
+      return next
     })
   }
 
@@ -202,14 +196,34 @@ export default function Home() {
     const index = todos.findIndex(t => t.id === todo.id)
     markDeleted(mode, [todo])
     commit(prev => prev.filter(t => t.id !== todo.id))
-    showToast('Task deleted', () =>
+    showToast('Task deleted', () => {
+      // If the delete already reached To Do, the task comes back as a new one: To Do's own repeat and
+      // history for it can't be restored.
+      const alreadyGone = !!todo.remoteId && !loadDeleted(modeRef.current).includes(todo.remoteId)
+      const restored: Todo = alreadyGone
+        ? {
+            ...todo,
+            createdHere: true,
+            remoteId: undefined,
+            remoteModified: undefined,
+            remoteDue: undefined,
+            remoteSeries: undefined,
+            lastCompletedAt: undefined,
+            lastCompletedDue: undefined,
+            dirty: undefined,
+            doneChanged: undefined,
+          }
+        : todo
       commit(prev => {
         if (prev.some(t => t.id === todo.id)) return prev
         const next = [...prev]
-        next.splice(Math.min(index, next.length), 0, todo)
+        next.splice(Math.min(index, next.length), 0, restored)
         return next
       })
-    )
+      if (alreadyGone && todo.remoteSeries) {
+        setTimeout(() => showToast('Restored as a new task — its repeat in To Do couldn’t be brought back'), 0)
+      }
+    })
   }
 
   const requestDelete = (todo: Todo) => {
@@ -218,19 +232,7 @@ export default function Home() {
   }
 
   const duplicateTodo = (todo: Todo) => {
-    const copy: Todo = {
-      ...todo,
-      id: crypto.randomUUID(),
-      createdHere: true,
-      remoteSeries: undefined,
-      done: false,
-      completedAt: undefined,
-      isProject: false,
-      projectId: undefined,
-      remoteId: undefined,
-      remoteModified: undefined,
-      dirty: undefined,
-    }
+    const copy = duplicateOf(todo)
     commit(prev => {
       const i = prev.findIndex(t => t.id === todo.id)
       const next = [...prev]
@@ -301,14 +303,20 @@ export default function Home() {
     const todo = todos.find(t => t.id === id)
     if (text && todo) {
       const parsed = withParsedTitle({ ...todo, text })
-      patchTodo(id, { text: parsed.text, rank: parsed.rank, priority: parsed.priority, category: parsed.category })
+      patchTodo(id, {
+        text: parsed.text,
+        rank: parsed.rank,
+        priority: parsed.priority,
+        category: parsed.category,
+        recurrenceDays: parsed.recurrenceDays,
+      })
     }
     setEditingId(null)
   }
 
   /** Removes completed tasks from this app only — To Do keeps its history. */
   const clearCompleted = () => {
-    const removed = completedTodos.filter(t => t.category !== 'daily')
+    const removed = completedTodos.filter(t => isClearable(t, !!loadLinks()[modeRef.current]))
     const ids = new Set(removed.map(t => t.id))
     commit(prev => prev.filter(t => !ids.has(t.id)))
     showToast(`Cleared ${removed.length} completed`, () =>
@@ -360,9 +368,10 @@ export default function Home() {
     ? []
     : shown.filter(t => t.done).sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? ''))
   const overdueCount = activeTodos.filter(t => isOverdue(t.dueDate)).length
-  const clearableCount = completedTodos.filter(t => t.category !== 'daily').length
+  const clearableCount = completedTodos.filter(t => isClearable(t, !!loadLinks()[mode])).length
   const periodDone = periodView ? viewCtx.doneInPeriod[view as PeriodCategory] : 0
-  const periodTotal = periodDone + activeTodos.length
+  // Counted from the whole list, so a search doesn't skew "x of y done".
+  const periodTotal = periodDone + (periodView ? counts[view] ?? 0 : 0)
   const progress = periodTotal ? periodDone / periodTotal : 0
   const viewTotal = activeTodos.length + completedTodos.length
   const prioritySort = settings.sort === 'priority' && view !== 'upcoming'
@@ -439,7 +448,7 @@ export default function Home() {
         onGripPointerDown={sortable.onGripPointerDown(todo.id)}
         dropPreview={drag?.id === todo.id ? dropPreview : undefined}
         className={[
-          todo.done && 'done',
+          (todo.done || viewCtx.doneThisPeriod(todo)) && 'done',
           justCompleted === todo.id && 'just-completed',
           drag?.id === todo.id && 'is-lifted',
           drag?.id === todo.id && drag.settling && 'is-settling',
@@ -500,6 +509,12 @@ export default function Home() {
             )}
             {todo.done && todo.completedAt && (
               <span className="chip chip-plain">Completed {formatRelativeDate(todo.completedAt.slice(0, 10)).toLowerCase()}</span>
+            )}
+            {viewCtx.doneThisPeriod(todo) && (
+              <span className="chip chip-plain">
+                Done {todo.category === 'daily' ? 'today' : todo.category === 'weekly' ? 'this week' : 'this month'}
+                {todo.dueDate ? ` · next ${formatRelativeDate(todo.dueDate).toLowerCase()}` : ''}
+              </span>
             )}
           </>
         }
@@ -885,7 +900,7 @@ function TaskRow(p: TaskRowProps) {
         className="check"
         onClick={p.onToggle}
         role="checkbox"
-        aria-checked={todo.done}
+        aria-checked={todo.done || p.className.split(' ').includes('done')}
         aria-label={todo.done ? `Mark “${todo.text}” as not done` : `Complete “${todo.text}”`}
       >
         <Icon name="check" size={12} />

@@ -5,7 +5,9 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { Mode, Phase, PhaseStatus, Project, PHASE_STATUS_LABEL, PHASE_STATUS_ORDER } from '@/types'
 import { addPhase, deletePhase, deleteProject, getProject, reorderPhases, updatePhase, updateProject } from '@/lib/storage'
-import { DATA_CHANGE_EVENT, loadMode, loadTodos, saveMode, saveTodos, shouldShowToday } from '@/lib/todos'
+import { DATA_CHANGE_EVENT, loadMode, loadTodos, saveMode, saveTodos } from '@/lib/todos'
+import { buildViewContext, inView } from '@/lib/views'
+import { loadSettings } from '@/lib/settings'
 import { addDays, formatRelativeDate, getTodayString, isOverdue } from '@/lib/date'
 import AppShell from '@/components/AppShell'
 import { ALL_VIEWS, View } from '@/components/Sidebar'
@@ -67,18 +69,12 @@ export default function ProjectPage() {
     return () => window.removeEventListener(DATA_CHANGE_EVENT, reload)
   }, [mode, projectId])
 
+  // Same counts as the main page, so the sidebar matches whichever page you're on.
   const counts = useMemo(() => {
     const todos = mounted ? loadTodos(mode) : []
+    const ctx = buildViewContext(todos, loadSettings().weekStartsOn)
     const c: Partial<Record<View, number>> = {}
-    for (const v of ALL_VIEWS) {
-      c[v] = todos.filter(t => {
-        if (t.done) return false
-        if (v === 'today') return shouldShowToday(t.dueDate, t.recurrenceDays)
-        if (v === 'upcoming') return !!t.dueDate && t.dueDate > getTodayString()
-        if (v === 'all') return true
-        return t.category === v
-      }).length
-    }
+    for (const v of ALL_VIEWS) c[v] = todos.filter(t => !t.done && inView(t, v, ctx)).length
     return c
   }, [mode, mounted])
 

@@ -2,11 +2,11 @@
 
 import { Mode, MODE_ORDER, Todo } from '@/types'
 import { loadProjects, saveProjects } from '@/lib/storage'
-import { DATA_CHANGE_EVENT, loadDeleted, resetDailyTasks, saveTodos, syncKey, loadTodos, saveDeleted, saveTodosRaw } from '@/lib/todos'
+import { DATA_CHANGE_EVENT, loadDeleted, resetRepeatingTasks, saveTodos, syncKey, loadTodos, saveDeleted, saveTodosRaw } from '@/lib/todos'
 import { getAccount, getToken, ReauthRequired } from '@/lib/sync/msal'
 import { createTask, deleteTask, getTask, GraphDateTime, GraphError, GraphTask, listOpenTasks, listTasks, updateTask } from '@/lib/sync/graph'
 import { getTodayString, toDateString } from '@/lib/date'
-import { localDate, newTaskFromGraph, syncedFieldsFromGraph, toGraphTask } from '@/lib/sync/mapping'
+import { newTaskFromGraph, stateFromGraph, syncedFieldsFromGraph, toGraphTask } from '@/lib/sync/mapping'
 import { parseTitle, repeatPrefixOf } from '@/lib/priority'
 
 /* ---------- Linked lists ---------- */
@@ -127,38 +127,35 @@ async function pushTodos(mode: Mode, listId: string, token: string): Promise<num
     writes++
     const key = contentKey(todo)
     let remote: GraphTask
-    const body = toGraphTask(todo)
     try {
       remote = todo.remoteId
-        ? await updateTask(token, listId, todo.remoteId, body)
-        : await createTask(token, listId, body)
+        ? await updateTask(token, listId, todo.remoteId, toGraphTask(todo, false))
+        : await createTask(token, listId, toGraphTask(todo, true))
     } catch (e) {
       // Edited here but deleted in To Do: bring it back rather than lose the edit.
       if (!(e instanceof GraphError && e.status === 404 && todo.remoteId)) throw e
-      remote = await createTask(token, listId, body)
+      remote = await createTask(token, listId, toGraphTask(todo, true))
+    }
+    // Deleted here while it was being created: remove the new To Do task again.
+    if (!loadTodos(mode).some(t => t.id === todo.id)) {
+      saveDeleted(mode, [...loadDeleted(mode), remote.id])
+      continue
     }
     // Ticking a task To Do repeats doesn't close it: To Do records the occurrence separately and moves
     // this task's due date on. If the reply doesn't show that yet, read the task once more.
     if (todo.done && remote.status === 'completed' && remote.recurrence) {
       remote = await getTask(token, listId, remote.id).catch(() => remote)
     }
-    const rolledForward = todo.done && remote.status !== 'completed'
-    patchStoredTodo(mode, todo.id, current => ({
-      remoteId: remote.id,
-      remoteModified: remote.lastModifiedDateTime,
-      // Only clear the flag if nothing changed while the request was in flight.
-      dirty: contentKey(current) !== key,
-      ...(rolledForward && contentKey(current) === key
-        ? {
-            done: false,
-            completedAt: undefined,
-            lastCompletedAt: current.completedAt ?? new Date().toISOString(),
-            dueDate: localDate(remote.dueDateTime) ?? current.dueDate,
-            remoteDue: localDate(remote.dueDateTime),
-            remoteSeries: true,
-          }
-        : {}),
-    }))
+    const sent: Todo = { ...todo }
+    patchStoredTodo(mode, todo.id, current => {
+      const editedSince = contentKey(current) !== key
+      // Take To Do's reply as the truth: a tick made in To Do meanwhile, or a repeating task it moved on.
+      if (!editedSince) return { ...syncedFieldsFromGraph(remote, sent), dirty: false, doneChanged: false }
+      // Ticked or unticked again while this was in flight: keep that, it goes in the next push.
+      if (current.done !== sent.done) return { remoteId: remote.id, remoteModified: remote.lastModifiedDateTime, dirty: true }
+      // Renamed or reprioritised meanwhile: keep the new wording, but take what To Do did with the tick.
+      return { ...stateFromGraph(remote, sent), dirty: true, doneChanged: false }
+    })
   }
   return writes
 }
@@ -208,10 +205,10 @@ function rereadPrefixRules(mode: Mode, remote: GraphTask[]): void {
   localStorage.setItem(PREFIX_RULES_KEY(mode), PREFIX_RULES_VERSION)
 }
 
-/** Un-tick daily tasks completed before today (marked as changes to send). Returns whether any were reset. */
-function resetStaleDailyTasks(mode: Mode): boolean {
+/** Start fresh daily/weekly/monthly tasks made here whose period has passed. Returns whether any changed. */
+function resetStaleRepeatingTasks(mode: Mode): boolean {
   const todos = loadTodos(mode)
-  const reset = resetDailyTasks(todos)
+  const reset = resetRepeatingTasks(todos)
   if (reset === todos) return false
   saveTodos(mode, reset)
   return true
@@ -228,11 +225,7 @@ function seriesTitles(remote: GraphTask[]): Set<string> {
   return new Set(remote.filter(r => r.recurrence).map(r => r.title))
 }
 
-/**
- * Flag local tasks that belong to a series To Do repeats itself (the flag sticks, since completed copies
- * lose their recurrence). A copy To Do has as completed but the app un-ticked with its daily reset is
- * ticked again, so it isn't sent back as not done.
- */
+/** Flag local tasks that belong to a series To Do repeats itself (the flag sticks). */
 function markSeries(mode: Mode, remote: GraphTask[]): void {
   const titles = seriesTitles(remote)
   const byId = new Map(remote.map(r => [r.id, r]))
@@ -241,10 +234,6 @@ function markSeries(mode: Mode, remote: GraphTask[]): void {
   const next = todos.map(t => {
     const r = t.remoteId ? byId.get(t.remoteId) : undefined
     if (!r || !(t.remoteSeries || titles.has(r.title))) return t
-    if (!t.done && t.dirty && r.status === 'completed') {
-      changed = true
-      return { ...t, remoteSeries: true, done: true, completedAt: new Date(`${utcDate(r.completedDateTime) ?? getTodayString()}T12:00:00`).toISOString(), dirty: false }
-    }
     if (t.remoteSeries) return t
     changed = true
     return { ...t, remoteSeries: true }
@@ -522,14 +511,14 @@ async function syncOnce(): Promise<void> {
       }
       markSeries(mode, before)
       let writes = await cleanUpResetSeriesCopies(mode, before, link.listId, token)
-      resetStaleDailyTasks(mode)
+      resetStaleRepeatingTasks(mode)
       writes += await pushDeletions(mode, link.listId, token)
       writes += await pushTodos(mode, link.listId, token)
       // Only re-read To Do if this sync changed it.
       received += await applyRemote(mode, writes ? await listOpenTasks(token, link.listId) : before, link.listId, token)
       // A daily task created here that was ticked off on an earlier day (here or in To Do) is reset and
       // un-ticked in To Do in this same sync.
-      if (resetStaleDailyTasks(mode)) writes += await pushTodos(mode, link.listId, token)
+      if (resetStaleRepeatingTasks(mode)) writes += await pushTodos(mode, link.listId, token)
       sent += writes
       const latest = loadLinks()
       if (latest[mode]?.listId === link.listId) {

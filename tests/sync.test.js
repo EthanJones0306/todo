@@ -59,8 +59,10 @@ const calls = []
 const bodies = []
 const urls = []
 let lagNextList = null // when set, the next list response returns this stale copy of a task
+// Modification times follow the real clock (as To Do's do), one second apart so each change is newer.
+const CLOCK_BASE = Date.now()
 const stamp = t => {
-  t.lastModifiedDateTime = `2026-10-24T10:${String(Math.floor(++clock / 60)).padStart(2, '0')}:${String(clock % 60).padStart(2, '0')}Z`
+  t.lastModifiedDateTime = new Date(CLOCK_BASE + ++clock * 1000).toISOString().replace(/\.\d+Z$/, 'Z')
 }
 const addRemote = (title, extra = {}) => {
   const t = { id: 'T' + ++seq, title, status: 'notStarted', createdDateTime: new Date().toISOString(), ...extra }
@@ -83,8 +85,10 @@ const localDay = dt => {
   const d = new Date(dt.dateTime.slice(0, 19) + 'Z')
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
+let onRequest = null // optional hook: runs at the start of each request (e.g. to make an edit mid-sync)
 global.fetch = async (url, init = {}) => {
   const method = init.method || 'GET'
+  if (onRequest) await onRequest(method, url)
   const u = new URL(url)
   const p = u.pathname.replace('/v1.0/me/todo/lists/' + LIST + '/tasks', '')
   calls.push(`${method} ${p || '/'}`)
@@ -146,7 +150,7 @@ const todosLib = require(path.join(BUILD, 'lib/todos.js'))
 const priority = require(path.join(BUILD, 'lib/priority.js'))
 const views = require(path.join(BUILD, 'lib/views.js'))
 const { setLink, requestSync, getStatus, pendingCount, findReopenedCandidates, markRemoteCompleted } = engine
-const { loadTodos, saveTodos, saveTodosRaw, markDeleted, resetDailyTasks } = todosLib
+const { loadTodos, saveTodos, saveTodosRaw, markDeleted, resetRepeatingTasks, toggleDone, duplicateOf, isClearable } = todosLib
 const { parseTitle, composeTitle, priorityCompare, reprioritise } = priority
 
 const mode = 'work'
@@ -338,7 +342,7 @@ const ok = msg => {
   const staleCopy = { ...mp } // what a lagging read would still return
   await requestSync() // pushes the completion
   // Next sync's read lags: it still shows the task open, with an older modification time.
-  lagNextList = { ...staleCopy, lastModifiedDateTime: '2026-10-24T09:00:00Z' }
+  lagNextList = { ...staleCopy, lastModifiedDateTime: new Date(CLOCK_BASE - 3600000).toISOString() }
   await sync()
   assert.ok(local('Month-end pack').done, 'stayed ticked despite the stale read')
   ok('an out-of-date read from To Do is ignored')
@@ -347,19 +351,19 @@ const ok = msg => {
   const before = [
     { id: 'y', text: 'y', done: true, completedAt: yesterday, category: 'daily' }, // local-only
     { id: 't', text: 't', done: true, completedAt: now, category: 'daily' },
-    { id: 'w', text: 'w', done: true, completedAt: yesterday, category: 'weekly' },
+    { id: 'w', text: 'w', done: true, completedAt: now, category: 'weekly' }, // this week: stays done
     { id: 'r', text: 'r', done: true, completedAt: yesterday, category: 'daily', remoteId: 'R1' }, // from To Do
   ]
-  const after = resetDailyTasks(before)
+  const after = resetRepeatingTasks(before)
   assert.deepStrictEqual(after.map(t => [t.id, t.done]), [['y', false], ['t', true], ['w', true], ['r', true]])
-  assert.strictEqual(resetDailyTasks(after), after, 'stable')
+  assert.strictEqual(resetRepeatingTasks(after), after, 'stable')
   // A synced daily task created here: To Do keeps the completed copy, a fresh copy is added for today
   const ds = local('Daily standup')
   commit(all => all.map(t => (t.id === ds.id ? { ...t, done: true, completedAt: now } : t)))
   await sync()
   assert.strictEqual(remote('z_Daily standup').status, 'completed')
   saveTodosRaw(mode, loadTodos(mode).map(t => (t.id === ds.id ? { ...t, completedAt: yesterday } : t))) // overnight
-  commit(all => resetDailyTasks(all)) // the page's morning check
+  commit(all => resetRepeatingTasks(all)) // the page's morning check
   bodies.length = 0
   await sync()
   assert.ok(!bodies.some(b => b.status === 'notStarted' && !b.title), 'the completed copy is not re-opened')
@@ -367,7 +371,7 @@ const ok = msg => {
   assert.deepStrictEqual(standups.map(t => t.status).sort(), ['completed', 'notStarted'], 'old copy stays completed; new one for today')
   const localStandups = loadTodos(mode).filter(t => t.text === 'Daily standup')
   assert.strictEqual(localStandups.filter(t => !t.done).length, 1)
-  commit(all => resetDailyTasks(all))
+  commit(all => resetRepeatingTasks(all))
   await sync()
   assert.strictEqual(remotes('z_Daily standup').length, 2, 'rolled over only once')
   ok('daily tasks made here start fresh each morning as a new copy; completed copies are never re-opened')
@@ -379,7 +383,7 @@ const ok = msg => {
   commit(all => all.map(t => (t.id === mr.id ? { ...t, done: true, completedAt: now } : t)))
   await sync()
   saveTodosRaw(mode, loadTodos(mode).map(t => (t.id === mr.id ? { ...t, completedAt: yesterday } : t)))
-  commit(all => resetDailyTasks(all))
+  commit(all => resetRepeatingTasks(all))
   await sync()
   assert.strictEqual(fromTodo.status, 'completed')
   assert.strictEqual(remotes('z_Morning report').length, 1)
@@ -532,19 +536,204 @@ const ok = msg => {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
   })()
   // A series ticked this period: its other open copy is hidden
-  sample.push(V('Series', { category: 'weekly', done: true, completedAt: now }), { ...V('Series', { category: 'weekly' }), id: 'series-open' })
+  sample.push(V('Series', { category: 'weekly', done: true, completedAt: now }), { ...V('Series', { category: 'weekly' }), id: 'series-open', originalId: 'Series' })
+  sample.push(V('Same name', { category: 'daily', done: true, completedAt: now }), { ...V('Same name', { category: 'daily', dueDate: today }), id: 'same-name-other' })
   const c = views.buildViewContext(sample, 1)
   const list = v => sample.filter(t => views.inView(t, v, c)).map(t => t.id)
-  assert.deepStrictEqual(list('daily'), ['d-today', 'd-overdue', 'd-undated'])
+  assert.deepStrictEqual(list('daily'), ['d-today', 'd-overdue', 'd-undated', 'same-name-other'], 'a different task with the same name is not hidden')
   assert.deepStrictEqual(list('weekly'), ['w-this'])
   assert.deepStrictEqual(list('monthly'), ['m-this'])
-  assert.deepStrictEqual(c.doneInPeriod, { daily: 1, weekly: 1, monthly: 0 })
+  assert.deepStrictEqual(c.doneInPeriod, { daily: 2, weekly: 1, monthly: 0 })
   const wk = views.periodBounds('weekly', 1, '2026-10-22') // a Thursday
   assert.deepStrictEqual(wk, { start: '2026-10-19', end: '2026-10-25' })
   assert.deepStrictEqual(views.periodBounds('weekly', 0, '2026-10-22'), { start: '2026-10-18', end: '2026-10-24' })
   assert.deepStrictEqual(views.periodBounds('monthly', 1, '2026-02-10'), { start: '2026-02-01', end: '2026-02-28' })
   ok('Daily, Weekly and Monthly list only what is still open this day, week or month')
 
+
+  /* ===== Everyday edge cases ===== */
+  const wd = { pattern: { type: 'weekly', interval: 1, daysOfWeek: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'] }, range: { type: 'noEnd', startDate: dayStr(-30) } }
+  // 1. A repeating task is completed exactly once per tick, however many syncs follow
+  const rs = addRemote('z_Reconcile cash', { dueDateTime: dueOn(0), recurrence: wd })
+  await sync()
+  const rsLocal = local('Reconcile cash')
+  commit(all => all.map(t => (t.id === rsLocal.id ? { ...t, done: true, completedAt: now } : t)))
+  await Promise.all([requestSync(), requestSync(), requestSync()]) // several triggers at once
+  await sync()
+  await sync()
+  assert.strictEqual(remotes('z_Reconcile cash').filter(t => t.status === 'completed').length, 1, 'completed once')
+  assert.strictEqual(pendingCount(mode), 0)
+  ok('one tick completes a repeating task exactly once, even with overlapping syncs')
+
+  // 2. Ticking and unticking before the sync runs sends nothing that changes To Do
+  const ut = addRemote('z_Untick me', { dueDateTime: dueOn(0), recurrence: wd })
+  await sync()
+  const utId = local('Untick me').id
+  commit(all => all.map(t => (t.id === utId ? { ...t, done: true, completedAt: now } : t)))
+  commit(all => all.map(t => (t.id === utId ? { ...t, done: false, completedAt: undefined } : t)))
+  await sync()
+  assert.strictEqual(remotes('z_Untick me').filter(t => t.status === 'completed').length, 0, 'not completed in To Do')
+  assert.strictEqual(ut.status, 'notStarted')
+  assert.ok(views.inView(local('Untick me'), 'daily', views.buildViewContext(loadTodos(mode), 1)), 'still on today’s list')
+  ok('ticking then unticking before a sync leaves To Do untouched')
+
+  // 3. An edit made while a sync is running is not lost
+  const e1 = addRemote('Edit during sync A')
+  const e2 = addRemote('Edit during sync B')
+  await sync()
+  const eA = local('Edit during sync A').id
+  commit(all => all.map(t => (t.id === eA ? { ...t, text: 'Edit during sync A2' } : t)))
+  let fired = false
+  onRequest = async method => {
+    if (method === 'PATCH' && !fired) {
+      fired = true
+      commit(all => all.map(t => (t.text === 'Edit during sync B' ? { ...t, priority: 'high' } : t)))
+    }
+  }
+  await sync()
+  onRequest = null
+  await sync()
+  assert.strictEqual(e1.title, 'Edit during sync A2')
+  assert.strictEqual(e2.title, 'H_Edit during sync B', 'the mid-sync edit reached To Do too')
+  assert.strictEqual(pendingCount(mode), 0)
+  ok('an edit made while a sync is running still reaches To Do')
+
+  // 4. Weekday task: ticked Friday → off the list for the weekend, back on Monday
+  const fri = '2026-10-23'
+  const ctxSat = views.buildViewContext([{ id: 'f', text: 'Weekday job', category: 'daily', done: false, dueDate: '2026-10-26', lastCompletedAt: '2026-10-23T08:00:00Z' }], 1, '2026-10-24')
+  const fTask = { id: 'f', text: 'Weekday job', category: 'daily', done: false, dueDate: '2026-10-26', lastCompletedAt: '2026-10-23T08:00:00Z' }
+  assert.ok(!views.inView(fTask, 'daily', ctxSat), 'Saturday: not shown (due Monday)')
+  const ctxMon = views.buildViewContext([fTask], 1, '2026-10-26')
+  assert.ok(views.inView(fTask, 'daily', ctxMon), 'Monday: back')
+  assert.strictEqual(ctxMon.doneInPeriod.daily, 0, 'Friday’s tick does not count as done Monday')
+  void fri
+  ok('a weekday task ticked on Friday is back on Monday, not counted as done')
+
+  // 5. Weekly view respects the week start setting
+  const sun = { id: 's', text: 'Sunday report', category: 'weekly', done: false, dueDate: '2026-10-25' } // a Sunday
+  assert.ok(views.inView(sun, 'weekly', views.buildViewContext([sun], 1, '2026-10-22')), 'Monday-start week: Sun 25 is this week')
+  assert.ok(!views.inView(sun, 'weekly', views.buildViewContext([sun], 0, '2026-10-22')), 'Sunday-start week: Sun 25 is next week')
+  ok('the Weekly list follows the week-start setting')
+
+  /* ===== Review fixes ===== */
+  // #1a A task ticked in To Do, then edited here before the app syncs, must stay completed
+  const ph = addRemote('2_Phone tick')
+  await sync()
+  await fetch(`https://graph.microsoft.com/v1.0/me/todo/lists/${LIST}/tasks/${ph.id}`, { method: 'PATCH', body: JSON.stringify({ status: 'completed' }) })
+  commit(all => all.map(t => (t.text === 'Phone tick' ? { ...t, rank: 1 } : t)))
+  await sync()
+  assert.strictEqual(ph.status, 'completed', 'not re-opened by the edit')
+  assert.strictEqual(ph.title, '1_Phone tick', 'the edit still went through')
+  assert.ok(local('Phone tick').done, 'and it shows as done here')
+  ok('editing a task that was just ticked in To Do keeps it completed')
+
+  // #1b Same for a repeating task: the tick in To Do is recognised and not repeated
+  const st = addRemote('z_Phone standup', { dueDateTime: dueOn(0), recurrence: wd })
+  await sync()
+  await fetch(`https://graph.microsoft.com/v1.0/me/todo/lists/${LIST}/tasks/${st.id}`, { method: 'PATCH', body: JSON.stringify({ status: 'completed' }) })
+  commit(all => all.map(t => (t.text === 'Phone standup' ? { ...t, priority: 'high' } : t)))
+  await sync()
+  await sync()
+  assert.strictEqual(remotes('z_H_Phone standup').filter(t => t.status === 'completed').length + remotes('z_Phone standup').filter(t => t.status === 'completed').length, 1, 'completed once only')
+  const psl = local('Phone standup')
+  assert.ok(psl.lastCompletedAt, 'recognised as done for today')
+  assert.ok(!views.inView(psl, 'daily', views.buildViewContext(loadTodos(mode), 1)), 'off today’s Daily list')
+  ok('editing a repeating task ticked in To Do keeps it off today’s list without ticking it again')
+
+  // #4 An overdue monthly/weekly occurrence ticked in the next period doesn't hide that period's one
+  const m = { id: 'm', text: 'Month-end', category: 'monthly', done: false, dueDate: '2026-11-30', lastCompletedAt: '2026-11-02T09:00:00Z', lastCompletedDue: '2026-10-31' }
+  assert.ok(views.inView(m, 'monthly', views.buildViewContext([m], 1, '2026-11-02')), 'October’s tick (done 2 Nov) leaves November’s on the list')
+  const m2 = { ...m, lastCompletedDue: '2026-11-30', dueDate: '2026-12-31', lastCompletedAt: '2026-11-20T09:00:00Z' }
+  assert.ok(!views.inView(m2, 'monthly', views.buildViewContext([m2], 1, '2026-11-21')), 'November’s own tick does hide it for November')
+  const w = { id: 'w', text: 'Weekly BCI', category: 'weekly', done: false, dueDate: '2026-10-30', lastCompletedAt: '2026-10-26T09:00:00Z', lastCompletedDue: '2026-10-23' }
+  assert.ok(views.inView(w, 'weekly', views.buildViewContext([w], 1, '2026-10-26')), 'last Friday’s tick on Monday leaves this Friday’s on the list')
+  const dly = { id: 'd', text: 'Daily', category: 'daily', done: false, dueDate: dayStr(0), lastCompletedAt: now, lastCompletedDue: dayStr(-1) }
+  assert.ok(!views.inView(dly, 'daily', views.buildViewContext([dly], 1)), 'daily: ticking yesterday’s overdue one today counts as today')
+  ok('ticking an overdue weekly/monthly task doesn’t hide the current period’s occurrence')
+
+  // #5 A repeating task already done this period is marked done everywhere, so it isn't ticked again
+  const ctx5 = views.buildViewContext([dly], 1)
+  assert.ok(ctx5.doneThisPeriod(dly), 'known as done for today')
+  assert.ok(!ctx5.doneThisPeriod({ ...dly, lastCompletedAt: yesterday }), 'yesterday’s tick doesn’t count')
+  ok('a repeating task done this period is recognised as done in every view')
+
+  // #6 Weekly and monthly tasks made in this app come back each new week / month
+  const lastWeek = new Date(Date.now() - 8 * 86400000).toISOString()
+  const lastMonthTime = (() => { const d = new Date(); d.setDate(0); d.setHours(12); return d.toISOString() })() // last day of previous month
+  const rr = resetRepeatingTasks([
+    { id: 'w-local', text: 'w', done: true, completedAt: lastWeek, category: 'weekly' },
+    { id: 'm-local', text: 'm', done: true, completedAt: lastMonthTime, category: 'monthly' },
+    { id: 'w-now', text: 'w2', done: true, completedAt: now, category: 'weekly' },
+    { id: 'w-todo', text: 'w3', done: true, completedAt: lastWeek, category: 'weekly', remoteId: 'RW' }, // from To Do
+  ])
+  assert.deepStrictEqual(rr.map(t => [t.id, t.done]), [['w-local', false], ['m-local', false], ['w-now', true], ['w-todo', true]])
+  ok('weekly and monthly tasks made in this app come back each new week and month')
+
+  // Renaming a repeating task while its tick is being sent doesn't tick it twice
+  const mf = addRemote('z_Midflight', { dueDateTime: dueOn(0), recurrence: wd })
+  await sync()
+  const mfId = local('Midflight').id
+  commit(all => all.map(t => (t.id === mfId ? { ...t, done: true, completedAt: now } : t)))
+  let renamed = false
+  onRequest = async method => {
+    if (method === 'PATCH' && !renamed) {
+      renamed = true
+      commit(all => all.map(t => (t.id === mfId ? { ...t, text: 'Midflight renamed' } : t)))
+    }
+  }
+  await sync()
+  onRequest = null
+  await sync()
+  await sync()
+  assert.strictEqual(remotes('z_Midflight').length + remotes('z_Midflight renamed').length >= 1, true)
+  const mfDone = [...tasks.values()].filter(t => /Midflight/.test(t.title) && t.status === 'completed').length
+  assert.strictEqual(mfDone, 1, 'completed exactly once')
+  assert.strictEqual(mf.title, 'z_Midflight renamed', 'the rename still reached To Do')
+  assert.ok(local('Midflight renamed').lastCompletedAt && !local('Midflight renamed').done)
+  ok('renaming a repeating task while its tick is in flight neither loses the rename nor ticks it twice')
+
+  // #10 Deleting a task while it is still being created doesn't bring it back
+  commit(all => [...all, { id: 'quick', text: 'Quick delete', done: false, category: 'once', createdHere: true }])
+  onRequest = async method => {
+    if (method === 'POST') commit(all => all.filter(t => t.id !== 'quick'))
+  }
+  await sync()
+  onRequest = null
+  await sync()
+  assert.ok(!local('Quick delete'), 'not back here')
+  assert.ok(!remote('Quick delete'), 'and removed from To Do again')
+  ok('a task deleted while it was being created stays deleted')
+
+  // #7 Unticking a custom-days task takes back the copy its tick created
+  const gym = { id: 'gym', text: 'Gym', done: false, category: 'custom', recurrenceDays: [1, 3, 5], dueDate: dayStr(0) }
+  const ticked = toggleDone([gym], 'gym').next
+  assert.strictEqual(ticked.length, 2, 'tick adds the next occurrence')
+  const un = toggleDone(ticked, 'gym')
+  assert.deepStrictEqual(un.next.map(t => [t.id, t.done]), [['gym', false]], 'untick takes it back')
+  assert.strictEqual(un.removed.length, 1)
+  ok('unticking a custom-days task removes the copy its tick created')
+
+  // #8 Typing z_ into a custom-days task makes it daily and drops the custom days
+  const pz = priority.withParsedTitle({ ...gym, text: 'z_Gym' })
+  assert.deepStrictEqual([pz.category, pz.recurrenceDays, pz.text], ['daily', undefined, 'Gym'])
+  ok('typing a repeat prefix replaces custom days')
+
+  // #9 A duplicate is a fresh, independent task
+  const dupSrc = { id: 'src', text: 'Recon', done: false, category: 'daily', remoteId: 'R9', remoteSeries: true, lastCompletedAt: now, lastCompletedDue: dayStr(0), remoteDue: dayStr(1), dueDate: dayStr(1), rolledOver: true, originalId: 'x', doneChanged: true }
+  const dup = duplicateOf(dupSrc)
+  for (const k of ['remoteId', 'remoteSeries', 'lastCompletedAt', 'lastCompletedDue', 'remoteDue', 'rolledOver', 'originalId', 'doneChanged']) assert.strictEqual(dup[k], undefined, k + ' cleared')
+  assert.strictEqual(dup.dueDate, dayStr(1), 'keeps its due date')
+  const ctx9 = views.buildViewContext([dupSrc, { ...dup, dueDate: dayStr(0) }], 1)
+  assert.ok(views.inView({ ...dup, dueDate: dayStr(0) }, 'daily', ctx9), 'not hidden because the original was done')
+  ok('duplicates carry no sync history and are not hidden by the original')
+
+  // #3 Clear completed never removes a tick that hasn't reached To Do
+  assert.ok(!isClearable({ id: 'a', text: 'a', done: true, category: 'once', dirty: true, remoteId: 'R' }, true), 'unsynced tick kept')
+  assert.ok(!isClearable({ id: 'b', text: 'b', done: true, category: 'once' }, true), 'never-synced task in a synced workspace kept')
+  assert.ok(isClearable({ id: 'c', text: 'c', done: true, category: 'once', remoteId: 'R' }, true), 'synced completed task can go')
+  assert.ok(isClearable({ id: 'd', text: 'd', done: true, category: 'once' }, false), 'local-only workspace: can go')
+  assert.ok(!isClearable({ id: 'e', text: 'e', done: true, category: 'daily', remoteId: 'R' }, true), 'daily kept')
+  ok('clearing completed tasks never removes a tick that has not reached To Do')
   console.log(`\nAll ${passed} sync checks passed.`)
 })().catch(e => {
   console.error('FAILED:', e)

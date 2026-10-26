@@ -1,5 +1,7 @@
 import { Category, Todo } from '@/types'
-import { addDays, getTodayString, parseDate, toDateString } from '@/lib/date'
+import { getTodayString, periodBounds, toDateString } from '@/lib/date'
+
+export { periodBounds }
 import { shouldShowToday } from '@/lib/todos'
 
 export type PeriodCategory = 'daily' | 'weekly' | 'monthly'
@@ -9,24 +11,10 @@ export function isPeriodCategory(c: Category | string): c is PeriodCategory {
   return c === 'daily' || c === 'weekly' || c === 'monthly'
 }
 
-/** First and last day (inclusive, YYYY-MM-DD) of the day, week or month containing `today`. */
-export function periodBounds(period: PeriodCategory, weekStartsOn: 0 | 1, today = getTodayString()): { start: string; end: string } {
-  if (period === 'daily') return { start: today, end: today }
-  if (period === 'weekly') {
-    const back = (parseDate(today).getDay() - weekStartsOn + 7) % 7
-    const start = addDays(today, -back)
-    return { start, end: addDays(start, 6) }
-  }
-  const d = parseDate(today)
-  return {
-    start: toDateString(new Date(d.getFullYear(), d.getMonth(), 1)),
-    end: toDateString(new Date(d.getFullYear(), d.getMonth() + 1, 0)),
-  }
-}
 
-/** Copies of the same repeating task (To Do creates a new task for each occurrence) share this key. */
+/** A task and the copies made from it (custom-days roll-forward) count as one; same-named tasks don't. */
 function seriesKey(t: Todo): string {
-  return `${t.category}|${t.text.trim().toLowerCase()}`
+  return t.originalId ?? t.id
 }
 
 export interface ViewContext {
@@ -34,6 +22,11 @@ export interface ViewContext {
   openInPeriod: (t: Todo) => boolean
   /** Distinct repeating tasks ticked off in the current period, per category — for "x of y done". */
   doneInPeriod: Record<PeriodCategory, number>
+  /**
+   * An open task To Do repeats whose occurrence for this period is already ticked off (To Do keeps it
+   * open with a later due date). Shown as done everywhere, so it isn't ticked again by mistake.
+   */
+  doneThisPeriod: (t: Todo) => boolean
   today: string
 }
 
@@ -51,16 +44,24 @@ export function buildViewContext(todos: Todo[], weekStartsOn: 0 | 1, today = get
     weekly: periodBounds('weekly', weekStartsOn, today),
     monthly: periodBounds('monthly', weekStartsOn, today),
   }
-  const doneKeys: Record<PeriodCategory, Set<string>> = { daily: new Set(), weekly: new Set(), monthly: new Set() }
-  for (const t of todos) {
-    if (!isPeriodCategory(t.category)) continue
-    // Done here, or a task To Do repeats whose latest occurrence was ticked off (it stays open in To Do).
-    const doneAt = t.done ? t.completedAt : t.lastCompletedAt
-    if (doneAt && toDateString(new Date(doneAt)) >= bounds[t.category].start) doneKeys[t.category].add(seriesKey(t))
+  /**
+   * Whether a task counts as done for its current day/week/month. A task To Do repeats stays open, so
+   * its last tick is used. For weekly/monthly the tick must be for an occurrence due in this period: an
+   * overdue one from last week/month ticked late doesn't cover this period's. Daily: ticked today.
+   */
+  const doneFor = (t: Todo): boolean => {
+    if (!isPeriodCategory(t.category)) return false
+    const { start } = bounds[t.category]
+    if (t.done) return !!t.completedAt && toDateString(new Date(t.completedAt)) >= start
+    if (!t.lastCompletedAt || toDateString(new Date(t.lastCompletedAt)) < start) return false
+    return t.category === 'daily' || !t.lastCompletedDue || t.lastCompletedDue >= start
   }
+  const doneKeys: Record<PeriodCategory, Set<string>> = { daily: new Set(), weekly: new Set(), monthly: new Set() }
+  for (const t of todos) if (isPeriodCategory(t.category) && doneFor(t)) doneKeys[t.category].add(seriesKey(t))
   return {
     today,
     doneInPeriod: { daily: doneKeys.daily.size, weekly: doneKeys.weekly.size, monthly: doneKeys.monthly.size },
+    doneThisPeriod: t => !t.done && doneFor(t),
     openInPeriod: t => {
       if (t.done || !isPeriodCategory(t.category)) return false
       const { end } = bounds[t.category]
