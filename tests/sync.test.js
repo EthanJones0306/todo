@@ -418,17 +418,24 @@ const ok = msg => {
   assert.strictEqual(localDay(dfd.dueDateTime), dayStr(0), '…and moves it to the next occurrence (today)')
   assert.strictEqual(remotes('z_Data Feed Dashboard').filter(t => t.status === 'completed').length, 1, 'one completion recorded')
   const after1 = local('Data Feed Dashboard')
-  assert.ok(!after1.done && after1.lastCompletedAt && after1.dueDate === dayStr(0), 'here: open, due today, done today')
+  assert.ok(!after1.done && after1.dueDate === dayStr(0) && after1.lastCompletedDue === dayStr(-1), 'here: open, due today; yesterday’s was the one done')
   const ctxToday = views.buildViewContext(loadTodos(mode), 1)
-  assert.ok(!views.inView(after1, 'daily', ctxToday), 'not on today’s Daily list')
-  assert.ok(!views.inView(after1, 'today', ctxToday), 'not on Today either')
-  const ctxTomorrow = views.buildViewContext(loadTodos(mode), 1, dayStr(1))
-  assert.ok(views.inView(after1, 'daily', ctxTomorrow), 'back on the Daily list tomorrow')
+  assert.ok(views.inView(after1, 'daily', ctxToday), 'yesterday’s done — today’s is still on the Daily list')
+  assert.ok(views.inView(after1, 'today', ctxToday), 'and on Today')
+  assert.ok(!ctxToday.doneThisPeriod(after1), 'not marked done for today')
+  // …now tick today's:
+  commit(all => all.map(t => (t.id === after1.id ? { ...t, done: true, completedAt: now } : t)))
+  await sync()
+  const after2 = local('Data Feed Dashboard')
+  assert.strictEqual(localDay(dfd.dueDateTime), dayStr(1), 'To Do moves it to tomorrow')
+  const ctxAfter2 = views.buildViewContext(loadTodos(mode), 1)
+  assert.ok(!views.inView(after2, 'daily', ctxAfter2), 'today’s done: off the Daily list')
+  assert.ok(views.inView(after2, 'daily', views.buildViewContext(loadTodos(mode), 1, dayStr(1))), 'back tomorrow')
   calls.length = 0
   await sync()
   await sync()
-  assert.strictEqual(remotes('z_Data Feed Dashboard').filter(t => t.status === 'completed').length, 1, 'never ticked twice')
-  ok('ticking a repeating task removes it for today, even though To Do moves it to today; it is back tomorrow')
+  assert.strictEqual(remotes('z_Data Feed Dashboard').filter(t => t.status === 'completed').length, 2, 'exactly two ticks: yesterday’s and today’s')
+  ok('ticking an overdue daily task completes yesterday’s and keeps today’s on the list; ticking today’s removes it')
 
   // Ticked in To Do itself: the due date jumps forward and the app treats that as done for today
   const pls = addRemote('z_Platform Summary', { dueDateTime: dueOn(-1), recurrence: weekdays })
@@ -437,8 +444,11 @@ const ok = msg => {
   await sync()
   const plsLocal = local('Platform Summary')
   assert.ok(!plsLocal.done && plsLocal.dueDate === dayStr(0) && plsLocal.lastCompletedAt)
-  assert.ok(!views.inView(plsLocal, 'daily', views.buildViewContext(loadTodos(mode), 1)), 'ticked in To Do: off today’s list')
-  ok('ticking a repeating task in To Do also takes it off today’s list')
+  assert.ok(views.inView(plsLocal, 'daily', views.buildViewContext(loadTodos(mode), 1)), 'overdue ticked in To Do: today’s still on the list')
+  await fetch(`https://graph.microsoft.com/v1.0/me/todo/lists/${LIST}/tasks/${pls.id}`, { method: 'PATCH', body: JSON.stringify({ status: 'completed' }) })
+  await sync()
+  assert.ok(!views.inView(local('Platform Summary'), 'daily', views.buildViewContext(loadTodos(mode), 1)), 'today’s ticked in To Do: off the list')
+  ok('ticks made in To Do follow the same rule: overdue keeps today’s, today’s removes it')
 
   // A repeating task stuck as "done" here (from the earlier version) is repaired from To Do
   const stuck = addRemote('z_Account Mapping', { dueDateTime: dueOn(2), recurrence: weekdays })
@@ -648,13 +658,14 @@ const ok = msg => {
   const w = { id: 'w', text: 'Weekly BCI', category: 'weekly', done: false, dueDate: '2026-10-30', lastCompletedAt: '2026-10-26T09:00:00Z', lastCompletedDue: '2026-10-23' }
   assert.ok(views.inView(w, 'weekly', views.buildViewContext([w], 1, '2026-10-26')), 'last Friday’s tick on Monday leaves this Friday’s on the list')
   const dly = { id: 'd', text: 'Daily', category: 'daily', done: false, dueDate: dayStr(0), lastCompletedAt: now, lastCompletedDue: dayStr(-1) }
-  assert.ok(!views.inView(dly, 'daily', views.buildViewContext([dly], 1)), 'daily: ticking yesterday’s overdue one today counts as today')
+  assert.ok(views.inView(dly, 'daily', views.buildViewContext([dly], 1)), 'daily: ticking yesterday’s overdue one leaves today’s on the list')
   ok('ticking an overdue weekly/monthly task doesn’t hide the current period’s occurrence')
 
   // #5 A repeating task already done this period is marked done everywhere, so it isn't ticked again
-  const ctx5 = views.buildViewContext([dly], 1)
-  assert.ok(ctx5.doneThisPeriod(dly), 'known as done for today')
-  assert.ok(!ctx5.doneThisPeriod({ ...dly, lastCompletedAt: yesterday }), 'yesterday’s tick doesn’t count')
+  const dlyToday = { ...dly, dueDate: dayStr(1), lastCompletedDue: dayStr(0) }
+  const ctx5 = views.buildViewContext([dlyToday], 1)
+  assert.ok(ctx5.doneThisPeriod(dlyToday), 'known as done for today')
+  assert.ok(!ctx5.doneThisPeriod({ ...dlyToday, lastCompletedAt: yesterday }), 'yesterday’s tick doesn’t count')
   ok('a repeating task done this period is recognised as done in every view')
 
   // #6 Weekly and monthly tasks made in this app come back each new week / month
@@ -734,6 +745,15 @@ const ok = msg => {
   assert.ok(isClearable({ id: 'd', text: 'd', done: true, category: 'once' }, false), 'local-only workspace: can go')
   assert.ok(!isClearable({ id: 'e', text: 'e', done: true, category: 'daily', remoteId: 'R' }, true), 'daily kept')
   ok('clearing completed tasks never removes a tick that has not reached To Do')
+
+  // Daily tasks made in this app: ticking an overdue one brings it straight back for today
+  const od = resetRepeatingTasks([{ id: 'od', text: 'Local daily', done: true, completedAt: now, category: 'daily', dueDate: dayStr(-1) }])
+  assert.deepStrictEqual(od.map(t => [t.done, t.dueDate]), [[false, dayStr(0)]], 'local-only: back, due today')
+  const odToday = resetRepeatingTasks([{ id: 'od2', text: 'Local daily', done: true, completedAt: now, category: 'daily', dueDate: dayStr(0) }])
+  assert.strictEqual(odToday[0].done, true, 'today’s ticked: stays done')
+  const odSynced = resetRepeatingTasks([{ id: 'od3', text: 'Synced daily', done: true, completedAt: now, category: 'daily', dueDate: dayStr(-1), remoteId: 'R3', createdHere: true }])
+  assert.deepStrictEqual(odSynced.map(t => [t.done, t.dueDate, !!t.remoteId]), [[true, dayStr(-1), true], [false, dayStr(0), false]], 'synced: yesterday’s stays done, a fresh one for today')
+  ok('ticking an overdue daily task made in the app brings it straight back for today')
   console.log(`\nAll ${passed} sync checks passed.`)
 })().catch(e => {
   console.error('FAILED:', e)

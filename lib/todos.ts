@@ -121,8 +121,8 @@ function weekStart(): 0 | 1 {
 }
 
 /**
- * Each new day, week or month, daily/weekly/monthly tasks created in this app start fresh. Completed
- * tasks are never re-opened in To Do:
+ * Each new day, week or month — or straight away when an overdue one is ticked — daily/weekly/monthly
+ * tasks created in this app start fresh for the current period. Completed tasks are never re-opened in To Do:
  * - not synced: the task is simply un-ticked;
  * - synced and created here: To Do keeps the completed copy, and a new copy is added for the new period
  *   (sent to To Do as a new task on the next sync);
@@ -136,10 +136,13 @@ export function resetRepeatingTasks(todos: Todo[], today = getTodayString(), wee
     const period = t.category === 'daily' || t.category === 'weekly' || t.category === 'monthly' ? t.category : null
     if (!period || !t.done || !t.completedAt || t.remoteSeries || t.rolledOver) return t
     const { start } = periodBounds(period, weekStartsOn, today)
-    if (toDateString(new Date(t.completedAt)) >= start) return t
+    // Ticked in an earlier period, or ticked now but for an earlier period's occurrence (overdue):
+    // either way this period's is still to do.
+    const tickedForEarlier = !!t.dueDate && t.dueDate < start
+    if (toDateString(new Date(t.completedAt)) >= start && !tickedForEarlier) return t
     if (!t.remoteId) {
       changed = true
-      return { ...t, done: false, completedAt: undefined }
+      return { ...t, done: false, completedAt: undefined, dueDate: t.dueDate ? today : undefined }
     }
     if (!t.createdHere) return t
     changed = true

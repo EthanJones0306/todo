@@ -46,15 +46,15 @@ export function buildViewContext(todos: Todo[], weekStartsOn: 0 | 1, today = get
   }
   /**
    * Whether a task counts as done for its current day/week/month. A task To Do repeats stays open, so
-   * its last tick is used. For weekly/monthly the tick must be for an occurrence due in this period: an
-   * overdue one from last week/month ticked late doesn't cover this period's. Daily: ticked today.
+   * its last tick is used — and that tick must be for an occurrence due in this period. Ticking an overdue
+   * one (yesterday's, last week's) means "I did that one"; this period's is still to do.
    */
   const doneFor = (t: Todo): boolean => {
     if (!isPeriodCategory(t.category)) return false
     const { start } = bounds[t.category]
     if (t.done) return !!t.completedAt && toDateString(new Date(t.completedAt)) >= start
     if (!t.lastCompletedAt || toDateString(new Date(t.lastCompletedAt)) < start) return false
-    return t.category === 'daily' || !t.lastCompletedDue || t.lastCompletedDue >= start
+    return !t.lastCompletedDue || t.lastCompletedDue >= start
   }
   const doneKeys: Record<PeriodCategory, Set<string>> = { daily: new Set(), weekly: new Set(), monthly: new Set() }
   for (const t of todos) if (isPeriodCategory(t.category) && doneFor(t)) doneKeys[t.category].add(seriesKey(t))

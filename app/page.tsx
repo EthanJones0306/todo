@@ -184,7 +184,8 @@ export default function Home() {
     commit(prev => {
       const { next, removed } = toggleDone(prev, id)
       if (removed.length) markDeleted(modeRef.current, removed)
-      return next
+      // Ticking an overdue repeating task made here covers that earlier one: today's comes straight back.
+      return resetRepeatingTasks(next)
     })
   }
 
