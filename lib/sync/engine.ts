@@ -516,8 +516,8 @@ async function syncOnce(): Promise<void> {
       writes += await pushTodos(mode, link.listId, token)
       // Only re-read To Do if this sync changed it.
       received += await applyRemote(mode, writes ? await listOpenTasks(token, link.listId) : before, link.listId, token)
-      // A daily task created here that was ticked off on an earlier day (here or in To Do) is reset and
-      // un-ticked in To Do in this same sync.
+      // A daily/weekly/monthly task created here whose period has passed gets its fresh copy, and that
+      // copy is sent to To Do in this same sync.
       if (resetStaleRepeatingTasks(mode)) writes += await pushTodos(mode, link.listId, token)
       sent += writes
       const latest = loadLinks()

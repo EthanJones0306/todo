@@ -12,3 +12,6 @@ out/
 
 # Compiled test build
 tests/.build
+
+# Personal notes, kept off GitHub
+docs/
