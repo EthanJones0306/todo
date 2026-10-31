@@ -13,12 +13,9 @@ export interface ThemeMeta {
 export const THEMES: ThemeMeta[] = [
   { id: 'pch', label: 'PCH', tone: 'light', swatch: ['#f4f6f9', '#ffffff', '#002F6C', '#002F6C'] },
   { id: 'contour', label: 'PCH Hive', tone: 'light', motion: true, swatch: ['#cfe3ec', '#ffffff', '#002F6C', '#002F6C'] },
-  { id: 'monochrome', label: 'Mono', tone: 'light', swatch: ['#ffffff', '#ffffff', '#000000', '#000000'] },
   { id: 'swell', label: 'Swell', tone: 'light', motion: true, swatch: ['#e5e8eb', '#ffffff', '#2340c8', '#0f1633'] },
   { id: 'paper', label: 'Paper', tone: 'light', swatch: ['#efe6cf', '#f8f2e1', '#7a3b1d', '#241c14'] },
   { id: 'midnight', label: 'Midnight', tone: 'dark', swatch: ['#0b0d12', '#151922', '#8b8cf8', '#eef0f5'] },
-  { id: 'forest', label: 'Forest', tone: 'dark', swatch: ['#0b120e', '#131d17', '#4ade80', '#e7f3ea'] },
-  { id: 'sunset', label: 'Sunset', tone: 'dark', swatch: ['#160d0c', '#221614', '#fb923c', '#fff4ec'] },
   { id: 'swarm', label: 'PCH Swarm', tone: 'dark', motion: true, swatch: ['#00245a', '#00204e', '#5fb4d0', '#f2f6fb'] },
   { id: 'beehive', label: 'Beehive', tone: 'dark', motion: true, swatch: ['#002f6c', '#0a3a78', '#f2ad1c', '#ffffff'] },
   { id: 'aurora', label: 'Aurora', tone: 'dark', motion: true, swatch: ['#03090f', '#0b1a22', '#5be39a', '#eafff3'] },
