@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Category, Theme } from '@/types'
-import { SETTINGS_KEY, THEME_KEY } from '@/lib/init-script'
+import { RETIRED_THEMES, SETTINGS_KEY, THEME_KEY } from '@/lib/init-script'
 
 export type ThemeChoice = 'system' | Theme
 export type Density = 'comfortable' | 'compact'
@@ -49,7 +49,11 @@ export function loadSettings(): Settings {
     stored = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')
   } catch {}
   // The theme predates the settings object and is still read by the pre-paint script.
-  const theme = (localStorage.getItem(THEME_KEY) as ThemeChoice | null) ?? stored.theme
+  let theme = (localStorage.getItem(THEME_KEY) as ThemeChoice | null) ?? stored.theme
+  if (theme && RETIRED_THEMES.includes(theme)) {
+    theme = 'system'
+    localStorage.setItem(THEME_KEY, theme)
+  }
   // One-time move to the Priority sort when it was introduced (2026-10-19).
   if (!(stored as { prioritySortSet?: boolean }).prioritySortSet) {
     stored.sort = 'priority'

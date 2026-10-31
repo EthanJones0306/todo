@@ -459,45 +459,6 @@ html[data-theme='crt'] {
 }
 
 /* ---------- Motion themes (animated backgrounds in components/ThemeBackground.tsx) ---------- */
-/* Etched terraces: cyan line-work on signal red, with dark glass panels so tasks stay easy to read. */
-html[data-theme='terraces'] {
-  color-scheme: dark;
-  --bg: #e31b32;
-  --sidebar: rgba(42, 4, 11, 0.74);
-  --surface: rgba(48, 5, 13, 0.82);
-  --surface-2: rgba(70, 10, 20, 0.84);
-  --surface-3: rgba(92, 16, 28, 0.86);
-  --border: rgba(184, 253, 255, 0.16);
-  --border-strong: rgba(184, 253, 255, 0.32);
-  --text: #f1feff;
-  --text-2: #b8fdff;
-  --text-3: #7fc3c8;
-  --accent: #5ce4ec;
-  --accent-hover: #8af0f5;
-  --accent-fg: #2a040b;
-  --accent-soft: rgba(92, 228, 236, 0.16);
-  --danger: #ffb4bd;
-  --danger-soft: rgba(255, 180, 189, 0.16);
-  --success: #5ce4ec;
-  --warning: #ffd36b;
-  --shadow-sm: 0 1px 2px rgba(20, 0, 4, 0.4);
-  --shadow-md: 0 0 0 1px rgba(184, 253, 255, 0.06), 0 8px 24px rgba(40, 0, 8, 0.45);
-  --shadow-lg: 0 0 0 1px rgba(184, 253, 255, 0.14), 0 24px 64px rgba(30, 0, 6, 0.6);
-  --overlay: rgba(30, 2, 7, 0.6);
-  --radius: 4px;
-  --radius-sm: 3px;
-  --radius-xs: 2px;
-  --font-body: Arial, Helvetica, sans-serif;
-  --font-display: Arial, Helvetica, sans-serif;
-  --display-weight: 700;
-  --display-tracking: -0.01em;
-  --cat-daily: #5ce4ec;
-  --cat-weekly: #ffd36b;
-  --cat-monthly: #ff9fd0;
-  --cat-custom: #a6f5b8;
-  --cat-once: #b8fdff;
-}
-
 /* PCH Swarm: white and PCH-blue sheets drifting through PCH navy. Arial, like the PCH theme. */
 html[data-theme='swarm'] {
   color-scheme: dark;
@@ -608,7 +569,7 @@ html[data-theme='swell'] {
   color-scheme: light;
   --bg: #e5e8eb;
   --sidebar: rgba(244, 246, 248, 0.84);
-  --surface: rgba(255, 255, 255, 0.88);
+  --surface: rgba(255, 255, 255, 0.93);
   --surface-2: rgba(243, 245, 248, 0.92);
   --surface-3: rgba(230, 234, 240, 0.94);
   --border: rgba(15, 22, 51, 0.1);
@@ -636,40 +597,40 @@ html[data-theme='swell'] {
   --cat-once: #6b7390;
 }
 
-/* Contour: a pale, slowly shifting topographic map in warm sand. */
+/* Hive: a honeycomb in wax and honey tones; cells warm up under the mouse. */
 html[data-theme='contour'] {
   color-scheme: light;
-  --bg: #f6e6cc;
-  --sidebar: rgba(255, 248, 236, 0.84);
-  --surface: rgba(255, 251, 244, 0.9);
-  --surface-2: rgba(250, 241, 226, 0.94);
-  --surface-3: rgba(243, 230, 210, 0.95);
-  --border: rgba(80, 40, 14, 0.12);
-  --border-strong: rgba(80, 40, 14, 0.22);
-  --text: #3a1d0e;
-  --text-2: #6b4630;
-  --text-3: #8f6a52;
-  --accent: #b2441a;
-  --accent-hover: #963813;
+  --bg: #fbefd4;
+  --sidebar: rgba(255, 249, 235, 0.86);
+  --surface: rgba(255, 252, 244, 0.9);
+  --surface-2: rgba(252, 243, 224, 0.94);
+  --surface-3: rgba(246, 232, 204, 0.95);
+  --border: rgba(92, 60, 10, 0.12);
+  --border-strong: rgba(92, 60, 10, 0.22);
+  --text: #3a2508;
+  --text-2: #6b4e26;
+  --text-3: #8c7048;
+  --accent: #9a5b00;
+  --accent-hover: #7f4a00;
   --accent-fg: #ffffff;
-  --accent-soft: rgba(178, 68, 26, 0.1);
+  --accent-soft: rgba(154, 91, 0, 0.12);
   --danger: #b0302c;
   --danger-soft: rgba(176, 48, 44, 0.1);
   --success: #4f7a2c;
   --warning: #a8700c;
-  --shadow-sm: 0 1px 2px rgba(80, 40, 14, 0.07);
-  --shadow-md: 0 1px 2px rgba(80, 40, 14, 0.06), 0 6px 18px rgba(80, 40, 14, 0.09);
-  --shadow-lg: 0 10px 30px rgba(80, 40, 14, 0.16), 0 24px 64px rgba(80, 40, 14, 0.14);
-  --overlay: rgba(58, 29, 14, 0.3);
+  --shadow-sm: 0 1px 2px rgba(92, 60, 10, 0.07);
+  --shadow-md: 0 1px 2px rgba(92, 60, 10, 0.06), 0 6px 18px rgba(92, 60, 10, 0.09);
+  --shadow-lg: 0 10px 30px rgba(92, 60, 10, 0.16), 0 24px 64px rgba(92, 60, 10, 0.14);
+  --overlay: rgba(58, 37, 8, 0.3);
   --radius: 8px;
   --font-display: var(--font-paper-heading), 'Playfair Display', Georgia, serif;
   --display-weight: 700;
   --display-tracking: -0.01em;
-  --cat-daily: #b2441a;
+  --cat-daily: #b06a00;
   --cat-weekly: #3f6f8f;
-  --cat-monthly: #a8700c;
+  --cat-monthly: #a8400c;
   --cat-custom: #4f7a2c;
-  --cat-once: #8f6a52;
+  --cat-once: #8c7048;
 }
 
 /* ---------- Preferences ---------- */
@@ -3211,7 +3172,7 @@ html[data-theme='monochrome'] .day-picker button.active {
   background: radial-gradient(1000px 500px at 50% 60%, rgba(35, 64, 200, 0.08), transparent 65%), #e5e8eb;
 }
 .theme-bg-contour {
-  background: repeating-radial-gradient(ellipse at 62% 43%, #fbf1e0 0 22px, #f3dcc0 23px 24px), #f6e6cc;
+  background: radial-gradient(1000px 600px at 60% 40%, rgba(240, 180, 70, 0.22), transparent 65%), #fbefd4;
 }
 .theme-bg ~ * {
   position: relative;
@@ -3273,18 +3234,18 @@ html[data-theme='monochrome'] .day-picker button.active {
 }
 
 /* Frosted panels so the motion reads as texture behind the tasks, not noise. */
-html:is([data-theme='terraces'], [data-theme='swarm'], [data-theme='aurora'], [data-theme='nightsky'], [data-theme='swell'], [data-theme='contour']) :is(.empty, .search) {
+html:is([data-theme='swarm'], [data-theme='aurora'], [data-theme='nightsky'], [data-theme='swell'], [data-theme='contour']) :is(.empty, .search) {
   background: var(--surface);
 }
-html:is([data-theme='terraces'], [data-theme='swarm'], [data-theme='aurora'], [data-theme='nightsky'], [data-theme='swell'], [data-theme='contour']) :is(.task-list, .composer, .progress-card, .all-done, .dialog, .menu, .card, .stat, .empty, .search) {
+html:is([data-theme='swarm'], [data-theme='aurora'], [data-theme='nightsky'], [data-theme='swell'], [data-theme='contour']) :is(.task-list, .composer, .progress-card, .all-done, .dialog, .menu, .card, .stat, .empty, .search) {
   backdrop-filter: blur(14px) saturate(130%);
   -webkit-backdrop-filter: blur(14px) saturate(130%);
 }
-html:is([data-theme='terraces'], [data-theme='swarm'], [data-theme='aurora'], [data-theme='nightsky'], [data-theme='swell'], [data-theme='contour']) .topbar {
+html:is([data-theme='swarm'], [data-theme='aurora'], [data-theme='nightsky'], [data-theme='swell'], [data-theme='contour']) .topbar {
   background: var(--sidebar);
 }
 /* Text that sits straight on the background gets a little help. */
-html:is([data-theme='terraces'], [data-theme='swarm'], [data-theme='aurora'], [data-theme='nightsky']) :is(.page-title, .page-subtitle, .page-head .eyebrow) {
+html:is([data-theme='swarm'], [data-theme='aurora'], [data-theme='nightsky']) :is(.page-title, .page-subtitle, .page-head .eyebrow) {
   color: var(--text);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 2px 16px rgba(0, 0, 0, 0.35);
 }

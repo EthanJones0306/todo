@@ -1,8 +1,8 @@
 /**
  * Animated backgrounds for the motion themes.
  *
- * Adapted from Subframe Motion Library examples: "Etched terraces", "Paper swarm", "Aurora curtain",
- * "Point cloud wave", "Contour terrain" and "Meteors". Colours and speeds are toned down so the
+ * Adapted from Subframe Motion Library examples: "Paper swarm", "Aurora curtain", "Point cloud wave",
+ * "Contour terrain" (as a honeycomb for Hive) and "Meteors". Colours and speeds are toned down so the
  * motion sits quietly behind a task list.
  *
  * MIT License
@@ -27,15 +27,17 @@
 
 import { useEffect, useRef, useState } from 'react'
 
-type Scene = 'terraces' | 'swarm' | 'aurora' | 'swell' | 'contour' | 'nightsky'
-const SCENES: Scene[] = ['terraces', 'swarm', 'aurora', 'swell', 'contour', 'nightsky']
-const CANVAS_SCENES: Scene[] = ['terraces', 'swarm', 'aurora', 'swell', 'contour']
+type Scene = 'swarm' | 'aurora' | 'swell' | 'contour' | 'nightsky'
+const SCENES: Scene[] = ['swarm', 'aurora', 'swell', 'contour', 'nightsky']
+const CANVAS_SCENES: Scene[] = ['swarm', 'aurora', 'swell', 'contour']
+/** Scenes that respond to the mouse. */
+const POINTER_SCENES: Scene[] = ['swarm', 'swell', 'contour']
 
 /** A running scene. `play` starts or stops the motion; when stopped it shows a still frame. */
 interface SceneHandle {
   play: (on: boolean) => void
-  /** Pointer position from -0.5..0.5, for scenes that react to it. */
-  point?: (x: number, y: number) => void
+  /** Mouse position in page (CSS) pixels, or null once it leaves the window. */
+  point?: (pos: { x: number; y: number } | null) => void
   destroy: () => void
 }
 
@@ -75,128 +77,6 @@ function fitCanvas(canvas: HTMLCanvasElement, maxPixels: number) {
     canvas.height = h
   }
   return { cssW: rect.width, cssH: rect.height, changed }
-}
-
-/* ---------- Etched terraces: two stepped reliefs drawn from fine cyan scanlines ---------- */
-
-function startTerraces(canvas: HTMLCanvasElement): SceneHandle | null {
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return null
-  let width = 0
-  let height = 0
-  let time = 0
-  let raf = 0
-  let last = 0
-  let playing = false
-  const relief = 65
-
-  const draw = () => {
-    if (!width || !height) return
-    ctx.fillStyle = '#e31b32'
-    ctx.fillRect(0, 0, width, height)
-    // Scale the relief with the screen so it reads the same on a phone and a big monitor.
-    const lift = relief * 0.9 * Math.max(0.7, Math.min(2.2, height / 420))
-    const field = (x: number, y: number) => {
-      let z = 0
-      for (let k = 0; k < 2; k++) {
-        const cx = width * (0.32 + k * 0.37)
-        const cy = height * (0.53 - k * 0.1)
-        const angle = (k ? -0.27 : 0.16) + Math.sin(time * 0.16) * 0.09
-        const dx = x - cx
-        const dy = y - cy
-        const a = (dx * Math.cos(angle) - dy * Math.sin(angle)) / (width * 0.255)
-        const b = (dx * Math.sin(angle) + dy * Math.cos(angle)) / (height * 0.37)
-        const d = Math.max(Math.abs(a), Math.abs(b))
-        if (d < 1) {
-          const steps = (1 - d) * 8
-          const t = steps % 1
-          const ledge = Math.floor(steps) + (t < 0.2 ? ((t * t) / 0.04) * 0.13 : 0.13 + ((t - 0.2) * 0.87) / 0.8)
-          z += (ledge / 8) * lift
-        }
-      }
-      return z
-    }
-    // Fewer, slightly wider-spaced lines than the original: it fills the whole screen here.
-    const lineGap = Math.max(2.6, height / 260)
-    const xStep = Math.max(3.5, width / 340)
-    const x0 = width * 0.04
-    const x1 = width * 0.96
-    const y0 = height * 0.1
-    const y1 = height * 0.97
-    ctx.strokeStyle = '#5ce4ec'
-    ctx.lineWidth = 0.72
-    for (let y = y0; y < y1; y += lineGap) {
-      ctx.beginPath()
-      for (let x = x0; x <= x1; x += xStep) {
-        const z = field(x, y)
-        const v = y - z + Math.sin(x * 0.07 + time * 0.7) * z * 0.045
-        if (x === x0) ctx.moveTo(x, v)
-        else ctx.lineTo(x, v)
-      }
-      ctx.stroke()
-    }
-    ctx.globalAlpha = 0.25
-    for (let x = x0; x < x1; x += xStep * 2.6) {
-      ctx.beginPath()
-      for (let y = y0; y < y1; y += 4) {
-        const z = field(x, y)
-        if (y === y0) ctx.moveTo(x, y - z)
-        else ctx.lineTo(x, y - z)
-      }
-      ctx.stroke()
-    }
-    ctx.globalAlpha = 1
-  }
-
-  const resize = () => {
-    const { cssW, cssH } = fitCanvas(canvas, 4_000_000)
-    width = cssW
-    height = cssH
-    ctx.setTransform(canvas.width / Math.max(1, width), 0, 0, canvas.height / Math.max(1, height), 0, 0)
-    draw()
-  }
-
-  // A background doesn't need 120fps: ~30fps keeps it smooth and light on the battery.
-  const tick = (now: number) => {
-    raf = 0
-    if (!playing || document.hidden) {
-      last = 0
-      return
-    }
-    if (!last || now - last >= 32) {
-      if (last) time += Math.min((now - last) / 1000, 0.05)
-      last = now
-      draw()
-    }
-    raf = requestAnimationFrame(tick)
-  }
-  const wake = () => {
-    if (playing && !raf && !document.hidden) raf = requestAnimationFrame(tick)
-  }
-
-  const observer = new ResizeObserver(resize)
-  observer.observe(canvas)
-  document.addEventListener('visibilitychange', wake)
-  resize()
-
-  return {
-    play(on) {
-      playing = on
-      if (on) wake()
-      else {
-        cancelAnimationFrame(raf)
-        raf = 0
-        last = 0
-        draw()
-      }
-    },
-    destroy() {
-      playing = false
-      cancelAnimationFrame(raf)
-      observer.disconnect()
-      document.removeEventListener('visibilitychange', wake)
-    },
-  }
 }
 
 /* ---------- Paper swarm: printed sheets tumbling upward through a blue volume (WebGL2) ---------- */
@@ -372,10 +252,10 @@ function startSwarm(canvas: HTMLCanvasElement): SceneHandle | null {
       }
       request()
     },
-    point(x, y) {
+    point(pos) {
       if (!playing) return
-      targetX = x * 0.3
-      targetY = y * 0.15
+      targetX = pos ? (pos.x / innerWidth - 0.5) * 0.3 : 0
+      targetY = pos ? (pos.y / innerHeight - 0.5) * 0.15 : 0
     },
     destroy() {
       stopped = true
@@ -388,7 +268,7 @@ function startSwarm(canvas: HTMLCanvasElement): SceneHandle | null {
   }
 }
 
-/* ---------- Full-screen shader scenes (WebGL1): Aurora, Swell, Contour ---------- */
+/* ---------- Full-screen shader scenes (WebGL1): Aurora, Swell, Hive ---------- */
 
 /** Aurora curtain: soft green curtains over a night sky, dimmed so white text stays readable. */
 const AURORA_FRAGMENT = `
@@ -428,37 +308,55 @@ void main(){
 }
 `
 
-/** Point cloud wave: rows of small ultramarine dots swelling slowly on pale grey. */
+/**
+ * Point cloud wave: rows of small ultramarine dots swelling slowly on pale grey. Near the mouse the
+ * dots lift, grow and brighten, with a soft ripple running out from the pointer.
+ */
 const SWELL_FRAGMENT = `
 precision highp float;
 uniform vec2 u_resolution;
 uniform float u_time;
+uniform vec2 u_mouse;
+uniform float u_hover;
 void main() {
   vec2 p=(gl_FragCoord.xy-.5*u_resolution)/min(u_resolution.x,u_resolution.y);
+  vec2 m=(u_mouse-.5*u_resolution)/min(u_resolution.x,u_resolution.y);
   vec3 c=vec3(.90,.92,.94);
-  for(int i=0;i<30;i++) {
+  // More rows, spaced further apart than the original, so the swell fills the lower half of the screen.
+  for(int i=0;i<40;i++) {
     float row=float(i);
-    float z=.45+row*.052;
+    float z=.45+row*.039;
     float scale=1.0/(1.0+z);
     float xCell=floor(p.x/scale*28.0+.5);
     float x=xCell/28.0;
     float height=sin(x*5.0+z*4.0-u_time*.48)*.1+.04*cos(x*9.0-z*3.0);
-    vec2 spot=vec2(x*scale,(.3-z*.31+height)*scale);
-    float radius=.004*scale+.0005;
+    vec2 spot=vec2(x*scale,(.3-z*.31)*scale*2.3-.1+height*scale);
+    float md=length(spot-m);
+    float near=u_hover*exp(-md*md*12.);
+    float ripple=.7+.3*sin(md*45.-u_time*4.);
+    float lift=near*ripple;
+    spot.y+=lift*.09*scale;
+    float radius=(.004*scale+.0005)*(1.+lift*1.4);
     float d=length(p-spot);
     float dotMask=1.0-smoothstep(radius,radius+.001,d);
     float shade=.45+.45*scale;
-    c=mix(c,vec3(.045,.12,.65)*shade,dotMask*.8);
+    vec3 ink=mix(vec3(.045,.12,.65)*shade,vec3(.12,.45,1.),min(1.,lift*1.2));
+    c=mix(c,ink,dotMask*(.7+lift*.3));
   }
   gl_FragColor=vec4(c,1);
 }
 `
 
-/** Contour terrain: drifting elevation bands, softened to a pale sand map with peach contours. */
-const CONTOUR_FRAGMENT = `
+/**
+ * Hive: a honeycomb whose cells are tinted by Subframe's slowly drifting contour terrain, from pale
+ * wax up to golden honey. Each cell shimmers on its own, and cells near the mouse warm up.
+ */
+const HIVE_FRAGMENT = `
 precision highp float;
 uniform vec2 u_resolution;
 uniform float u_time;
+uniform vec2 u_mouse;
+uniform float u_hover;
 float terrain(vec2 p) {
   p += .045 * vec2(sin(u_time * .17), cos(u_time * .13));
   float a = exp(-dot(p - vec2(.22,.12), p - vec2(.22,.12)) * 4.0);
@@ -466,24 +364,43 @@ float terrain(vec2 p) {
   float valley = .37 * exp(-dot(p - vec2(-.02,-.25), p - vec2(-.02,-.25)) * 18.0);
   return a + b - valley + .027 * sin(p.x * 18.0 + sin(p.y * 12.0));
 }
+float hexDist(vec2 p) {
+  p = abs(p);
+  return max(dot(p, normalize(vec2(1.0, 1.732))), p.x);
+}
 void main() {
-  vec2 p = (gl_FragCoord.xy - .5 * u_resolution) / min(u_resolution.x, u_resolution.y);
-  float altitude = terrain(p * 1.6);
-  float band = floor(altitude * 15.0) / 15.0;
-  float edge = fract(altitude * 15.0);
-  float contour = 1.0 - smoothstep(.024, .115, min(edge, 1.0 - edge));
-  float shade = smoothstep(.06, .19, edge) * (1.0 - smoothstep(.84,.98,edge));
-  vec3 orange = vec3(.76,.205,.062);
-  vec3 sand = vec3(.98,.87,.63);
-  vec3 color = mix(orange, sand, clamp(band * .78, 0.0, .9));
-  color *= .9 + .1 * shade;
-  color = mix(color, vec3(.99,.92,.75), contour * .78);
-  vec2 marks = abs(fract(p * 5.0 + .5) - .5);
-  float cross = (1.0 - smoothstep(.005,.011,marks.x)) * (1.0 - smoothstep(.035,.04,marks.y));
-  cross = max(cross, (1.0 - smoothstep(.005,.011,marks.y)) * (1.0 - smoothstep(.035,.04,marks.x)));
-  color = mix(color, vec3(.44,.11,.045), cross * .35);
-  // Wash towards warm paper so dark text reads on top of it.
-  color = mix(color, vec3(.985,.945,.88), .64);
+  float unit = min(u_resolution.x, u_resolution.y);
+  vec2 p = (gl_FragCoord.xy - .5 * u_resolution) / unit;
+  // Honeycomb: find the nearest of two offset hexagon lattices.
+  float cells = 11.0;
+  vec2 uv = p * cells;
+  vec2 r = vec2(1.0, 1.732);
+  vec2 h = r * .5;
+  vec2 a = mod(uv, r) - h;
+  vec2 b = mod(uv - h, r) - h;
+  vec2 gv = dot(a, a) < dot(b, b) ? a : b;
+  vec2 id = uv - gv;
+  vec2 center = id / cells;
+  float edge = .5 - hexDist(gv);
+  float altitude = terrain(center * 1.6);
+  float band = floor(altitude * 8.0) / 8.0;
+  vec3 wax = vec3(.99, .95, .85);
+  vec3 honey = vec3(.97, .77, .36);
+  vec3 amber = vec3(.86, .55, .16);
+  vec3 fill = mix(wax, honey, smoothstep(0.0, .9, band));
+  fill = mix(fill, amber, smoothstep(.75, 1.25, band) * .7);
+  float seed = fract(sin(dot(id, vec2(127.1, 311.7))) * 43758.5453);
+  fill *= .975 + .025 * sin(u_time * .7 + seed * 6.283);
+  fill = mix(fill * .97, fill, smoothstep(.04, .3, edge));
+  vec2 m = (u_mouse - .5 * u_resolution) / unit;
+  float md = length(center - m);
+  float glow = u_hover * exp(-md * md * 45.0);
+  float seam = 1.0 - smoothstep(.03, .03 + 2.0 * cells / unit, edge);
+  vec3 color = mix(fill, vec3(1.0, .975, .92), seam * .9);
+  // Wash towards warm wax so dark text reads on top of it.
+  color = mix(color, vec3(.995, .965, .9), .42);
+  // Cells under the mouse fill with warm honey (after the wash, so it shows).
+  color = mix(color, vec3(.98, .72, .24), glow * (1.0 - seam) * .55);
   gl_FragColor = vec4(color, 1.0);
 }
 `
@@ -491,7 +408,7 @@ void main() {
 const SHADERS: Record<'aurora' | 'swell' | 'contour', { source: string; speed: number; start: number; maxPixels: number }> = {
   aurora: { source: AURORA_FRAGMENT, speed: 1, start: 3, maxPixels: 1_600_000 },
   swell: { source: SWELL_FRAGMENT, speed: 0.6, start: 3, maxPixels: 3_000_000 },
-  contour: { source: CONTOUR_FRAGMENT, speed: 1, start: 3, maxPixels: 1_600_000 },
+  contour: { source: HIVE_FRAGMENT, speed: 1, start: 3, maxPixels: 2_400_000 },
 }
 
 function startShader(canvas: HTMLCanvasElement, scene: keyof typeof SHADERS): SceneHandle | null {
@@ -535,6 +452,11 @@ function startShader(canvas: HTMLCanvasElement, scene: keyof typeof SHADERS): Sc
   gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0)
   const resolutionU = gl.getUniformLocation(program, 'u_resolution')
   const timeU = gl.getUniformLocation(program, 'u_time')
+  // Optional: only Swell and Hive declare these (a missing uniform is simply skipped).
+  const mouseU = gl.getUniformLocation(program, 'u_mouse')
+  const hoverU = gl.getUniformLocation(program, 'u_hover')
+  // Mouse in canvas pixels (y up, as the shader sees it). It eases towards the pointer.
+  const mouse = { x: 0, y: 0, tx: 0, ty: 0, hover: 0, target: 0 }
 
   let time = start
   let raf = 0
@@ -547,6 +469,8 @@ function startShader(canvas: HTMLCanvasElement, scene: keyof typeof SHADERS): Sc
     gl.viewport(0, 0, canvas.width, canvas.height)
     gl.uniform2f(resolutionU, canvas.width, canvas.height)
     gl.uniform1f(timeU, time)
+    gl.uniform2f(mouseU, mouse.x, mouse.y)
+    gl.uniform1f(hoverU, mouse.hover)
     gl.drawArrays(gl.TRIANGLES, 0, 6)
   }
   // ~30fps is plenty for slow ambient motion and keeps the GPU (and battery) relaxed.
@@ -557,7 +481,12 @@ function startShader(canvas: HTMLCanvasElement, scene: keyof typeof SHADERS): Sc
       return
     }
     if (!last || now - last >= 32) {
-      if (last) time += Math.min((now - last) / 1000, 0.05) * speed
+      const dt = last ? Math.min((now - last) / 1000, 0.05) : 0
+      time += dt * speed
+      const ease = 1 - Math.exp(-6 * dt)
+      mouse.x += (mouse.tx - mouse.x) * ease
+      mouse.y += (mouse.ty - mouse.y) * ease
+      mouse.hover += (mouse.target - mouse.hover) * (1 - Math.exp(-3 * dt))
       last = now
       draw()
     }
@@ -565,6 +494,13 @@ function startShader(canvas: HTMLCanvasElement, scene: keyof typeof SHADERS): Sc
   }
   const wake = () => {
     if (playing && !raf && !stopped && !document.hidden) raf = requestAnimationFrame(tick)
+  }
+  const toCanvas = (x: number, y: number) => {
+    const rect = canvas.getBoundingClientRect()
+    return {
+      x: ((x - rect.left) * canvas.width) / Math.max(1, rect.width),
+      y: canvas.height - ((y - rect.top) * canvas.height) / Math.max(1, rect.height),
+    }
   }
   const resize = () => {
     fitCanvas(canvas, maxPixels)
@@ -589,8 +525,26 @@ function startShader(canvas: HTMLCanvasElement, scene: keyof typeof SHADERS): Sc
         cancelAnimationFrame(raf)
         raf = 0
         last = 0
+        // A still frame never shows a hover effect.
+        mouse.hover = mouse.target = 0
         draw()
       }
+    },
+    point(pos) {
+      if (!playing) return
+      if (!pos) {
+        mouse.target = 0
+        return
+      }
+      const c = toCanvas(pos.x, pos.y)
+      mouse.tx = c.x
+      mouse.ty = c.y
+      // First touch of the pointer: start the glow where it is rather than sliding in from a corner.
+      if (mouse.hover < 0.01) {
+        mouse.x = c.x
+        mouse.y = c.y
+      }
+      mouse.target = 1
     },
     destroy() {
       stopped = true
@@ -648,13 +602,11 @@ export default function ThemeBackground() {
     setFailed(false)
     if (!scene || !CANVAS_SCENES.includes(scene) || !canvas) return
     const h =
-      scene === 'terraces'
-        ? startTerraces(canvas)
-        : scene === 'swarm'
-          ? startSwarm(canvas)
-          : scene === 'aurora' || scene === 'swell' || scene === 'contour'
-            ? startShader(canvas, scene)
-            : null
+      scene === 'swarm'
+        ? startSwarm(canvas)
+        : scene === 'aurora' || scene === 'swell' || scene === 'contour'
+          ? startShader(canvas, scene)
+          : null
     if (!h) {
       setFailed(true)
       return
@@ -670,19 +622,26 @@ export default function ThemeBackground() {
     handle.current?.play(!still)
   }, [still, scene])
 
-  // Gentle parallax for the swarm. The layer itself ignores the pointer, so listen on the window.
+  // Mouse effects (Swarm parallax, Swell ripple, Hive glow). The layer itself ignores the pointer so
+  // it never blocks clicks; listen on the window instead. Off for touch and when motion is reduced.
   useEffect(() => {
-    if (scene !== 'swarm' || still) return
+    if (!scene || !POINTER_SCENES.includes(scene) || still) return
     const move = (e: PointerEvent) => {
       if (e.pointerType === 'touch') return
-      handle.current?.point?.(e.clientX / innerWidth - 0.5, e.clientY / innerHeight - 0.5)
+      handle.current?.point?.({ x: e.clientX, y: e.clientY })
     }
-    const leave = () => handle.current?.point?.(0, 0)
-    window.addEventListener('pointermove', move)
-    document.addEventListener('pointerleave', leave)
+    const out = (e: MouseEvent) => {
+      if (!e.relatedTarget) handle.current?.point?.(null)
+    }
+    const blur = () => handle.current?.point?.(null)
+    window.addEventListener('pointermove', move, { passive: true })
+    window.addEventListener('mouseout', out)
+    window.addEventListener('blur', blur)
     return () => {
       window.removeEventListener('pointermove', move)
-      document.removeEventListener('pointerleave', leave)
+      window.removeEventListener('mouseout', out)
+      window.removeEventListener('blur', blur)
+      handle.current?.point?.(null)
     }
   }, [scene, still])
 
