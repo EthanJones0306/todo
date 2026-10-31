@@ -26,6 +26,7 @@ export const THEMES: ThemeMeta[] = [
   { id: 'sunset', label: 'Sunset', tone: 'dark', swatch: ['#160d0c', '#221614', '#fb923c', '#fff4ec'] },
   { id: 'neon', label: 'Neon', tone: 'dark', swatch: ['#0c0820', '#1c1240', '#ff2ec4', '#f3eeff'] },
   { id: 'swarm', label: 'PCH Swarm', tone: 'dark', motion: true, swatch: ['#00245a', '#00204e', '#5fb4d0', '#f2f6fb'] },
+  { id: 'beehive', label: 'Beehive', tone: 'dark', motion: true, swatch: ['#002f6c', '#0a3a78', '#f2ad1c', '#ffffff'] },
   { id: 'aurora', label: 'Aurora', tone: 'dark', motion: true, swatch: ['#03090f', '#0b1a22', '#5be39a', '#eafff3'] },
   { id: 'nightsky', label: 'Night sky', tone: 'dark', motion: true, swatch: ['#1c2836', '#26364a', '#9ec5da', '#e3edf3'] },
   { id: 'crt', label: 'CRT', tone: 'dark', swatch: ['#050805', '#0a120a', '#39ff14', '#c8ffc0'] },

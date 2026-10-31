@@ -3,9 +3,10 @@
  *
  * Adapted from Subframe Motion Library examples: "Paper swarm", "Aurora curtain", "Point cloud wave",
  * "Contour terrain" (as a PCH honeycomb for Hive) and "Meteors". Colours and speeds are toned down so the
- * motion sits quietly behind a task list.
+ * motion sits quietly behind a task list. The Beehive scene is original pixel art in the style of
+ * PCH's "Hive Report" banner (not from Subframe).
  *
- * MIT License
+ * MIT License (applies to the Subframe-derived code)
  * Copyright (c) 2026 Subframe
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,9 +28,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 
-type Scene = 'swarm' | 'aurora' | 'swell' | 'contour' | 'nightsky'
-const SCENES: Scene[] = ['swarm', 'aurora', 'swell', 'contour', 'nightsky']
-const CANVAS_SCENES: Scene[] = ['swarm', 'aurora', 'swell', 'contour']
+type Scene = 'swarm' | 'aurora' | 'swell' | 'contour' | 'nightsky' | 'beehive'
+const SCENES: Scene[] = ['swarm', 'aurora', 'swell', 'contour', 'nightsky', 'beehive']
+const CANVAS_SCENES: Scene[] = ['swarm', 'aurora', 'swell', 'contour', 'beehive']
 /** Scenes that respond to the mouse. */
 const POINTER_SCENES: Scene[] = ['swarm', 'swell', 'contour']
 
@@ -560,6 +561,240 @@ function startShader(canvas: HTMLCanvasElement, scene: keyof typeof SHADERS): Sc
   }
 }
 
+/* ---------- Beehive: pixel-art meadow with a striped hive and bees (Canvas 2D, original) ---------- */
+
+const HIVE_GOLD = '#f2ad1c'
+const HIVE_LIGHT = '#ffd15c'
+const GRASS = '#76881d' // PCH olive
+const GRASS_TOP = '#8a9d2a'
+const GRASS_DARK = '#66771a'
+const LEAF = '#5f7f2a'
+const LEAF_LIGHT = '#7a9a35'
+const TRUNK = '#8f9496'
+const SKY = '#002f6c' // PCH navy
+const WING = '#e8f0ff'
+const STRIPE = '#1b1b1b'
+
+/** Small deterministic random numbers, so the meadow looks the same on every load. */
+function seeded(seed: number) {
+  return () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0
+    return seed / 4294967296
+  }
+}
+
+interface Bee {
+  /** Circles the hive (true) or drifts slowly across the sky (false). */
+  orbit: boolean
+  rx: number
+  ry: number
+  speed: number
+  phase: number
+  /** For drifting bees: height as a share of the screen. */
+  y: number
+}
+
+function startBeehive(canvas: HTMLCanvasElement): SceneHandle | null {
+  const ctx = canvas.getContext('2d')
+  const scenery = document.createElement('canvas')
+  const sctx = scenery.getContext('2d')
+  if (!ctx || !sctx) return null
+
+  let W = 0
+  let H = 0
+  let dpr = 1
+  let P = 4 // one art pixel, in CSS px
+  let groundTop = 0
+  let hiveX = 0
+  let hiveTop = 0
+  let time = 4
+  let raf = 0
+  let last = 0
+  let playing = false
+
+  const rand = seeded(7)
+  const bees: Bee[] = [
+    ...Array.from({ length: 5 }, (_, i) => ({
+      orbit: true,
+      rx: 40 + rand() * 90,
+      ry: 18 + rand() * 40,
+      speed: 0.35 + rand() * 0.3,
+      phase: i * 1.3 + rand(),
+      y: 0,
+    })),
+    ...Array.from({ length: 2 }, (_, i) => ({
+      orbit: false,
+      rx: 0,
+      ry: 10 + rand() * 14,
+      speed: 18 + rand() * 14,
+      phase: rand() * 1000 + i * 600,
+      y: 0.35 + i * 0.22,
+    })),
+  ]
+
+  /** Fills a block of art pixels at (x, y) in CSS px. */
+  const px = (c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string) => {
+    c.fillStyle = color
+    c.fillRect(x, y, w * P, h * P)
+  }
+  const snap = (v: number) => Math.round(v / P) * P
+
+  /** The still part of the scene (sky, meadow, trees, flowers, hive). Painted once per resize. */
+  const paintScenery = () => {
+    scenery.width = canvas.width
+    scenery.height = canvas.height
+    sctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    sctx.fillStyle = SKY
+    sctx.fillRect(0, 0, W, H)
+    // A faint warm glow behind the hive.
+    const gy = groundTop - 12 * P
+    const glow = sctx.createRadialGradient(hiveX, gy, 0, hiveX, gy, 34 * P)
+    glow.addColorStop(0, 'rgba(242, 173, 28, 0.10)')
+    glow.addColorStop(1, 'rgba(242, 173, 28, 0)')
+    sctx.fillStyle = glow
+    sctx.fillRect(0, 0, W, H)
+
+    // Meadow, with a lighter top edge and a few darker tufts.
+    const r = seeded(11)
+    sctx.fillStyle = GRASS
+    sctx.fillRect(0, groundTop, W, H - groundTop)
+    sctx.fillStyle = GRASS_TOP
+    sctx.fillRect(0, groundTop, W, P)
+    for (let x = 0; x < W; x += P) {
+      for (let y = groundTop + 2 * P; y < H; y += P) if (r() < 0.07) px(sctx, x, y, 1, 1, GRASS_DARK)
+    }
+
+    // Trees: grey trunk and a blocky olive canopy.
+    const tree = (cx: number) => {
+      const x = snap(cx)
+      px(sctx, x, groundTop - 9 * P, 2, 9, TRUNK)
+      const canopy = [' gggg ', 'gggggg', 'gGgggg', 'ggggGg', ' gggg ']
+      canopy.forEach((row, ry) =>
+        [...row].forEach((ch, rx) => {
+          if (ch !== ' ') px(sctx, x + (rx - 2) * P, groundTop - (14 - ry) * P, 1, 1, ch === 'G' ? LEAF_LIGHT : LEAF)
+        }),
+      )
+    }
+    // Flowers: a short stem with a gold head.
+    const flower = (cx: number, tall: number, color: string) => {
+      const x = snap(cx)
+      px(sctx, x, groundTop - tall * P, 1, tall, LEAF)
+      px(sctx, x - P, groundTop - (tall + 2) * P, 2, 2, color)
+    }
+    const fr = seeded(23)
+    for (let x = 30; x < W; x += 70 + fr() * 80) {
+      const tall = 2 + Math.floor(fr() * 3)
+      const color = fr() < 0.5 ? HIVE_GOLD : HIVE_LIGHT
+      if (Math.abs(x - hiveX) > 16 * P) flower(x, tall, color)
+    }
+    tree(hiveX - 24 * P)
+    if (hiveX + 22 * P < W - 2 * P) tree(hiveX + 22 * P)
+    if (W > 900) tree(W * 0.42)
+
+    // The hive: stacked gold bands with dark gaps, widest at the bottom, and a dark door.
+    const bands = [8, 12, 14, 16, 18, 20, 22, 24]
+    bands.forEach((w, i) => {
+      const y = hiveTop + i * 3 * P
+      const x = snap(hiveX - (w * P) / 2)
+      px(sctx, x, y, w, 2, HIVE_GOLD)
+      px(sctx, x, y, 2, 2, HIVE_LIGHT)
+    })
+    px(sctx, snap(hiveX - 3 * P), hiveTop + (bands.length * 3 - 4) * P, 6, 3, '#0d2347')
+  }
+
+  /** One bee: gold and dark stripes with flapping wings, facing the way it flies. */
+  const drawBee = (x: number, y: number, flap: boolean, left: boolean) => {
+    const bx = snap(x)
+    const by = snap(y)
+    const body = left ? 'dydyy' : 'yydyd'
+    for (let i = 0; i < body.length; i++) px(ctx, bx + i * P, by, 1, 2, body[i] === 'y' ? HIVE_LIGHT : STRIPE)
+    if (flap) px(ctx, bx + P, by - P, 3, 1, WING)
+    else {
+      px(ctx, bx + P, by - P, 1, 1, WING)
+      px(ctx, bx + 3 * P, by - P, 1, 1, WING)
+    }
+  }
+
+  const draw = () => {
+    if (!W) return
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    ctx.drawImage(scenery, 0, 0)
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    const beat = Math.floor(time * 6)
+    bees.forEach((b, i) => {
+      const flap = (beat + i) % 2 === 0
+      if (b.orbit) {
+        const a = time * b.speed + b.phase
+        const x = hiveX - 2 * P + Math.sin(a) * b.rx
+        const y = hiveTop + 2 * P + Math.sin(a * 2) * b.ry * 0.5 - Math.abs(Math.cos(a)) * b.ry * 0.6
+        drawBee(x, y, flap, Math.cos(a) < 0)
+      } else {
+        const span = W + 80
+        const x = ((time * b.speed + b.phase) % span) - 40
+        const y = H * b.y + Math.sin(time * 1.3 + b.phase) * b.ry
+        drawBee(x, y, flap, false)
+      }
+    })
+  }
+
+  const resize = () => {
+    const rect = canvas.getBoundingClientRect()
+    W = Math.max(1, rect.width)
+    H = Math.max(1, rect.height)
+    dpr = Math.min(devicePixelRatio || 1, 2)
+    canvas.width = Math.round(W * dpr)
+    canvas.height = Math.round(H * dpr)
+    P = Math.max(3, Math.min(5, Math.round(H / 180)))
+    groundTop = snap(H - 12 * P)
+    // Towards the right, clear of the sidebar and of the task column on wide screens.
+    hiveX = snap(Math.max(W * 0.5, W - Math.max(130, W * 0.13)))
+    hiveTop = groundTop - 23 * P
+    paintScenery()
+    draw()
+  }
+
+  // ~30fps is plenty for pixel art.
+  const tick = (now: number) => {
+    raf = 0
+    if (!playing || document.hidden) {
+      last = 0
+      return
+    }
+    if (!last || now - last >= 32) {
+      if (last) time += Math.min((now - last) / 1000, 0.05)
+      last = now
+      draw()
+    }
+    raf = requestAnimationFrame(tick)
+  }
+  const wake = () => {
+    if (playing && !raf && !document.hidden) raf = requestAnimationFrame(tick)
+  }
+  const observer = new ResizeObserver(resize)
+  observer.observe(canvas)
+  document.addEventListener('visibilitychange', wake)
+  resize()
+
+  return {
+    play(on) {
+      playing = on
+      if (on) wake()
+      else {
+        cancelAnimationFrame(raf)
+        raf = 0
+        last = 0
+        draw()
+      }
+    },
+    destroy() {
+      playing = false
+      cancelAnimationFrame(raf)
+      observer.disconnect()
+      document.removeEventListener('visibilitychange', wake)
+    },
+  }
+}
+
 /* ---------- Night sky: a few thin streaks of light crossing a quiet sky (CSS only) ---------- */
 
 const METEORS = Array.from({ length: 12 }, (_, i) => ({
@@ -607,9 +842,11 @@ export default function ThemeBackground() {
     const h =
       scene === 'swarm'
         ? startSwarm(canvas)
-        : scene === 'aurora' || scene === 'swell' || scene === 'contour'
-          ? startShader(canvas, scene)
-          : null
+        : scene === 'beehive'
+          ? startBeehive(canvas)
+          : scene === 'aurora' || scene === 'swell' || scene === 'contour'
+            ? startShader(canvas, scene)
+            : null
     if (!h) {
       setFailed(true)
       return

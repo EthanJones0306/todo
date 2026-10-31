@@ -498,6 +498,45 @@ html[data-theme='swarm'] {
   --cat-once: #b0b3b2;
 }
 
+/* Beehive: PCH navy sky, olive meadow, a gold striped hive and pixel bees (after the Hive Report banner). */
+html[data-theme='beehive'] {
+  color-scheme: dark;
+  --bg: #002f6c;
+  --sidebar: rgba(0, 36, 84, 0.86);
+  --surface: rgba(0, 40, 92, 0.9);
+  --surface-2: rgba(8, 54, 112, 0.92);
+  --surface-3: rgba(16, 68, 132, 0.94);
+  --border: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.26);
+  --text: #ffffff;
+  --text-2: #c9d5e6;
+  --text-3: #93a6c2;
+  --accent: #f2ad1c;
+  --accent-hover: #ffc23f;
+  --accent-fg: #002f6c;
+  --accent-soft: rgba(242, 173, 28, 0.16);
+  --danger: #f29a9a;
+  --danger-soft: rgba(242, 154, 154, 0.16);
+  --success: #a9bf3f;
+  --warning: #f2ad1c;
+  --shadow-sm: 0 1px 2px rgba(0, 10, 30, 0.4);
+  --shadow-md: 0 0 0 1px rgba(255, 255, 255, 0.05), 0 8px 24px rgba(0, 12, 36, 0.45);
+  --shadow-lg: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 24px 64px rgba(0, 10, 32, 0.6);
+  --overlay: rgba(0, 12, 34, 0.6);
+  --radius: 6px;
+  --radius-sm: 4px;
+  --radius-xs: 3px;
+  --font-body: Arial, Helvetica, sans-serif;
+  --font-display: Arial, Helvetica, sans-serif;
+  --display-weight: 700;
+  --display-tracking: -0.01em;
+  --cat-daily: #f2ad1c;
+  --cat-weekly: #a9bf3f;
+  --cat-monthly: #5fb4d0;
+  --cat-custom: #3cc2b5;
+  --cat-once: #b0b3b2;
+}
+
 /* Aurora: soft green curtains over a night sky. */
 html[data-theme='aurora'] {
   color-scheme: dark;
@@ -3237,18 +3276,18 @@ html[data-theme='monochrome'] .day-picker button.active {
 }
 
 /* Frosted panels so the motion reads as texture behind the tasks, not noise. */
-html:is([data-theme='swarm'], [data-theme='aurora'], [data-theme='nightsky'], [data-theme='swell'], [data-theme='contour']) :is(.empty, .search) {
+html:is([data-theme='swarm'], [data-theme='beehive'], [data-theme='aurora'], [data-theme='nightsky'], [data-theme='swell'], [data-theme='contour']) :is(.empty, .search) {
   background: var(--surface);
 }
-html:is([data-theme='swarm'], [data-theme='aurora'], [data-theme='nightsky'], [data-theme='swell'], [data-theme='contour']) :is(.task-list, .composer, .progress-card, .all-done, .dialog, .menu, .card, .stat, .empty, .search) {
+html:is([data-theme='swarm'], [data-theme='beehive'], [data-theme='aurora'], [data-theme='nightsky'], [data-theme='swell'], [data-theme='contour']) :is(.task-list, .composer, .progress-card, .all-done, .dialog, .menu, .card, .stat, .empty, .search) {
   backdrop-filter: blur(14px) saturate(130%);
   -webkit-backdrop-filter: blur(14px) saturate(130%);
 }
-html:is([data-theme='swarm'], [data-theme='aurora'], [data-theme='nightsky'], [data-theme='swell'], [data-theme='contour']) .topbar {
+html:is([data-theme='swarm'], [data-theme='beehive'], [data-theme='aurora'], [data-theme='nightsky'], [data-theme='swell'], [data-theme='contour']) .topbar {
   background: var(--sidebar);
 }
 /* Text that sits straight on the background gets a little help. */
-html:is([data-theme='swarm'], [data-theme='aurora'], [data-theme='nightsky']) :is(.page-title, .page-subtitle, .page-head .eyebrow) {
+html:is([data-theme='swarm'], [data-theme='beehive'], [data-theme='aurora'], [data-theme='nightsky']) :is(.page-title, .page-subtitle, .page-head .eyebrow) {
   color: var(--text);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 2px 16px rgba(0, 0, 0, 0.35);
 }
@@ -3257,6 +3296,10 @@ html:is([data-theme='swell'], [data-theme='contour']) :is(.page-title, .page-sub
 }
 html:is([data-theme='swell'], [data-theme='contour']) .page-subtitle {
   color: var(--text-2);
+}
+/* Gold caps date line, like the banner's "THE HIVE REPORT". */
+html[data-theme='beehive'] .page-head .eyebrow {
+  color: var(--accent);
 }
 .theme-card-tag {
   margin: 0 auto 0 6px;
