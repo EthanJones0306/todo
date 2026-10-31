@@ -69,8 +69,8 @@ export function loadSettings(): Settings {
 
 export function resolveTheme(choice: ThemeChoice): Theme {
   if (choice !== 'system') return choice
-  if (typeof window === 'undefined') return 'standard'
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'midnight' : 'standard'
+  if (typeof window === 'undefined') return 'pch'
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'midnight' : 'pch'
 }
 
 export function applySettingsToDocument(s: Settings): void {
