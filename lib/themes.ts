@@ -12,13 +12,13 @@ export interface ThemeMeta {
 
 export const THEMES: ThemeMeta[] = [
   { id: 'pch', label: 'PCH', tone: 'light', swatch: ['#f4f6f9', '#ffffff', '#002F6C', '#002F6C'] },
+  { id: 'contour', label: 'PCH Hive', tone: 'light', motion: true, swatch: ['#cfe3ec', '#ffffff', '#002F6C', '#002F6C'] },
   { id: 'standard', label: 'Standard', tone: 'light', swatch: ['#f7f7f8', '#ffffff', '#5b5bd6', '#0f1115'] },
   { id: 'slate', label: 'Slate', tone: 'light', swatch: ['#f6f8fa', '#ffffff', '#3b4a63', '#0f172a'] },
   { id: 'stone', label: 'Stone', tone: 'light', swatch: ['#f7f6f3', '#ffffff', '#7c5b3a', '#1c1917'] },
   { id: 'zinc', label: 'Zinc', tone: 'light', swatch: ['#f7f7f7', '#ffffff', '#18181b', '#09090b'] },
   { id: 'monochrome', label: 'Mono', tone: 'light', swatch: ['#ffffff', '#ffffff', '#000000', '#000000'] },
   { id: 'swell', label: 'Swell', tone: 'light', motion: true, swatch: ['#e5e8eb', '#ffffff', '#2340c8', '#0f1633'] },
-  { id: 'contour', label: 'Hive', tone: 'light', motion: true, swatch: ['#f7d98f', '#fffcf4', '#9a5b00', '#3a2508'] },
   { id: 'paper', label: 'Paper', tone: 'light', swatch: ['#efe6cf', '#f8f2e1', '#7a3b1d', '#241c14'] },
   { id: 'midnight', label: 'Midnight', tone: 'dark', swatch: ['#0b0d12', '#151922', '#8b8cf8', '#eef0f5'] },
   { id: 'nord', label: 'Nord', tone: 'dark', swatch: ['#2e3440', '#3b4252', '#88c0d0', '#eceff4'] },

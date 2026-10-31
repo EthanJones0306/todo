@@ -2,7 +2,7 @@
  * Animated backgrounds for the motion themes.
  *
  * Adapted from Subframe Motion Library examples: "Paper swarm", "Aurora curtain", "Point cloud wave",
- * "Contour terrain" (as a honeycomb for Hive) and "Meteors". Colours and speeds are toned down so the
+ * "Contour terrain" (as a PCH honeycomb for Hive) and "Meteors". Colours and speeds are toned down so the
  * motion sits quietly behind a task list.
  *
  * MIT License
@@ -332,24 +332,25 @@ void main() {
     float height=sin(x*5.0+z*4.0-u_time*.48)*.1+.04*cos(x*9.0-z*3.0);
     vec2 spot=vec2(x*scale,(.3-z*.31)*scale*2.3-.1+height*scale);
     float md=length(spot-m);
-    float near=u_hover*exp(-md*md*12.);
-    float ripple=.7+.3*sin(md*45.-u_time*4.);
+    float near=u_hover*exp(-md*md*20.);
+    float ripple=.85+.15*sin(md*40.-u_time*2.5);
     float lift=near*ripple;
-    spot.y+=lift*.09*scale;
-    float radius=(.004*scale+.0005)*(1.+lift*1.4);
+    spot.y+=lift*.045*scale;
+    float radius=(.004*scale+.0005)*(1.+lift*.6);
     float d=length(p-spot);
     float dotMask=1.0-smoothstep(radius,radius+.001,d);
     float shade=.45+.45*scale;
-    vec3 ink=mix(vec3(.045,.12,.65)*shade,vec3(.12,.45,1.),min(1.,lift*1.2));
-    c=mix(c,ink,dotMask*(.7+lift*.3));
+    vec3 ink=mix(vec3(.045,.12,.65)*shade,vec3(.12,.45,1.),lift*.6);
+    c=mix(c,ink,dotMask*(.7+lift*.15));
   }
   gl_FragColor=vec4(c,1);
 }
 `
 
 /**
- * Hive: a honeycomb whose cells are tinted by Subframe's slowly drifting contour terrain, from pale
- * wax up to golden honey. Each cell shimmers on its own, and cells near the mouse warm up.
+ * Hive (PCH): a honeycomb whose cells are tinted by Subframe's slowly drifting contour terrain, from
+ * the PCH page grey through pale PCH blue to teal, with the odd gold cell. Each cell shimmers on its
+ * own, and cells near the mouse fill with PCH gold.
  */
 const HIVE_FRAGMENT = `
 precision highp float;
@@ -384,23 +385,25 @@ void main() {
   float edge = .5 - hexDist(gv);
   float altitude = terrain(center * 1.6);
   float band = floor(altitude * 8.0) / 8.0;
-  vec3 wax = vec3(.99, .95, .85);
-  vec3 honey = vec3(.97, .77, .36);
-  vec3 amber = vec3(.86, .55, .16);
-  vec3 fill = mix(wax, honey, smoothstep(0.0, .9, band));
-  fill = mix(fill, amber, smoothstep(.75, 1.25, band) * .7);
+  vec3 page = vec3(.957, .965, .976);   // PCH page grey #f4f6f9
+  vec3 sky = vec3(.208, .6, .722);      // PCH blue #3599b8
+  vec3 teal = vec3(.086, .537, .502);   // PCH teal #168980
+  vec3 gold = vec3(.851, .678, 0.0);    // PCH gold #d9ad00
+  vec3 fill = mix(page, mix(page, sky, .55), smoothstep(0.0, .9, band));
+  fill = mix(fill, mix(page, teal, .6), smoothstep(.75, 1.25, band) * .7);
   float seed = fract(sin(dot(id, vec2(127.1, 311.7))) * 43758.5453);
+  fill = mix(fill, mix(page, gold, .55), step(.96, seed));
   fill *= .975 + .025 * sin(u_time * .7 + seed * 6.283);
   fill = mix(fill * .97, fill, smoothstep(.04, .3, edge));
   vec2 m = (u_mouse - .5 * u_resolution) / unit;
   float md = length(center - m);
   float glow = u_hover * exp(-md * md * 45.0);
   float seam = 1.0 - smoothstep(.03, .03 + 2.0 * cells / unit, edge);
-  vec3 color = mix(fill, vec3(1.0, .975, .92), seam * .9);
-  // Wash towards warm wax so dark text reads on top of it.
-  color = mix(color, vec3(.995, .965, .9), .42);
-  // Cells under the mouse fill with warm honey (after the wash, so it shows).
-  color = mix(color, vec3(.98, .72, .24), glow * (1.0 - seam) * .55);
+  vec3 color = mix(fill, vec3(1.0), seam * .9);
+  // Wash towards the PCH page grey so navy text reads on top of it.
+  color = mix(color, page, .42);
+  // Cells under the mouse fill with PCH gold (after the wash, so it shows).
+  color = mix(color, mix(page, gold, .75), glow * (1.0 - seam) * .55);
   gl_FragColor = vec4(color, 1.0);
 }
 `
@@ -483,10 +486,10 @@ function startShader(canvas: HTMLCanvasElement, scene: keyof typeof SHADERS): Sc
     if (!last || now - last >= 32) {
       const dt = last ? Math.min((now - last) / 1000, 0.05) : 0
       time += dt * speed
-      const ease = 1 - Math.exp(-6 * dt)
+      const ease = 1 - Math.exp(-3 * dt)
       mouse.x += (mouse.tx - mouse.x) * ease
       mouse.y += (mouse.ty - mouse.y) * ease
-      mouse.hover += (mouse.target - mouse.hover) * (1 - Math.exp(-3 * dt))
+      mouse.hover += (mouse.target - mouse.hover) * (1 - Math.exp(-2 * dt))
       last = now
       draw()
     }
