@@ -158,6 +158,7 @@ export default function SettingsModal({ initialTab = 'appearance', settings, onC
                       key={t.id}
                       active={settings.theme === t.id}
                       label={t.label}
+                      motion={t.motion}
                       onClick={() => onChange({ theme: t.id as ThemeChoice })}
                       preview={<ThemePreview swatch={t.swatch} />}
                     />
@@ -387,12 +388,29 @@ function Row({ label, hint, children }: { label: string; hint?: string; children
   )
 }
 
-function ThemeCard({ active, label, onClick, preview }: { active: boolean; label: string; onClick: () => void; preview: ReactNode }) {
+function ThemeCard({
+  active,
+  label,
+  motion,
+  onClick,
+  preview,
+}: {
+  active: boolean
+  label: string
+  motion?: boolean
+  onClick: () => void
+  preview: ReactNode
+}) {
   return (
     <button className={`theme-card ${active ? 'active' : ''}`} onClick={onClick} aria-pressed={active}>
       <div className="theme-card-preview">{preview}</div>
       <div className="theme-card-label">
         {label}
+        {motion && (
+          <span className="theme-card-tag" title="Animated background">
+            Live
+          </span>
+        )}
         {active && <Icon name="check" size={12} />}
       </div>
     </button>

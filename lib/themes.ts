@@ -6,6 +6,8 @@ export interface ThemeMeta {
   tone: 'light' | 'dark'
   /** bg, surface, accent, text — used for the preview swatch */
   swatch: [string, string, string, string]
+  /** Has an animated background (still when motion is reduced). */
+  motion?: boolean
 }
 
 export const THEMES: ThemeMeta[] = [
@@ -21,5 +23,7 @@ export const THEMES: ThemeMeta[] = [
   { id: 'forest', label: 'Forest', tone: 'dark', swatch: ['#0b120e', '#131d17', '#4ade80', '#e7f3ea'] },
   { id: 'sunset', label: 'Sunset', tone: 'dark', swatch: ['#160d0c', '#221614', '#fb923c', '#fff4ec'] },
   { id: 'neon', label: 'Neon', tone: 'dark', swatch: ['#0c0820', '#1c1240', '#ff2ec4', '#f3eeff'] },
+  { id: 'terraces', label: 'Terraces', tone: 'dark', motion: true, swatch: ['#e31b32', '#3a0710', '#5ce4ec', '#e8feff'] },
+  { id: 'swarm', label: 'Swarm', tone: 'dark', motion: true, swatch: ['#061c5e', '#08205f', '#ff6535', '#eff6ff'] },
   { id: 'crt', label: 'CRT', tone: 'dark', swatch: ['#050805', '#0a120a', '#39ff14', '#c8ffc0'] },
 ]

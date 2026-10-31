@@ -458,6 +458,79 @@ html[data-theme='crt'] {
   --cat-custom: #5ef1ff;
 }
 
+/* ---------- Motion themes (animated backgrounds in components/ThemeBackground.tsx) ---------- */
+/* Etched terraces: cyan line-work on signal red, with dark glass panels so tasks stay easy to read. */
+html[data-theme='terraces'] {
+  color-scheme: dark;
+  --bg: #e31b32;
+  --sidebar: rgba(42, 4, 11, 0.74);
+  --surface: rgba(48, 5, 13, 0.82);
+  --surface-2: rgba(70, 10, 20, 0.84);
+  --surface-3: rgba(92, 16, 28, 0.86);
+  --border: rgba(184, 253, 255, 0.16);
+  --border-strong: rgba(184, 253, 255, 0.32);
+  --text: #f1feff;
+  --text-2: #b8fdff;
+  --text-3: #7fc3c8;
+  --accent: #5ce4ec;
+  --accent-hover: #8af0f5;
+  --accent-fg: #2a040b;
+  --accent-soft: rgba(92, 228, 236, 0.16);
+  --danger: #ffb4bd;
+  --danger-soft: rgba(255, 180, 189, 0.16);
+  --success: #5ce4ec;
+  --warning: #ffd36b;
+  --shadow-sm: 0 1px 2px rgba(20, 0, 4, 0.4);
+  --shadow-md: 0 0 0 1px rgba(184, 253, 255, 0.06), 0 8px 24px rgba(40, 0, 8, 0.45);
+  --shadow-lg: 0 0 0 1px rgba(184, 253, 255, 0.14), 0 24px 64px rgba(30, 0, 6, 0.6);
+  --overlay: rgba(30, 2, 7, 0.6);
+  --radius: 4px;
+  --radius-sm: 3px;
+  --radius-xs: 2px;
+  --font-body: Arial, Helvetica, sans-serif;
+  --font-display: Arial, Helvetica, sans-serif;
+  --display-weight: 700;
+  --display-tracking: -0.01em;
+  --cat-daily: #5ce4ec;
+  --cat-weekly: #ffd36b;
+  --cat-monthly: #ff9fd0;
+  --cat-custom: #a6f5b8;
+  --cat-once: #b8fdff;
+}
+
+/* Paper swarm: orange and silver sheets tumbling through royal blue. */
+html[data-theme='swarm'] {
+  color-scheme: dark;
+  --bg: #061c5e;
+  --sidebar: rgba(3, 18, 58, 0.72);
+  --surface: rgba(4, 22, 70, 0.8);
+  --surface-2: rgba(10, 34, 96, 0.82);
+  --surface-3: rgba(18, 46, 120, 0.85);
+  --border: rgba(239, 246, 255, 0.14);
+  --border-strong: rgba(239, 246, 255, 0.3);
+  --text: #eff6ff;
+  --text-2: #bccbeb;
+  --text-3: #8396c4;
+  --accent: #ff6535;
+  --accent-hover: #ff7d52;
+  --accent-fg: #ffffff;
+  --accent-soft: rgba(255, 101, 53, 0.18);
+  --danger: #ff8a8a;
+  --danger-soft: rgba(255, 138, 138, 0.16);
+  --success: #7ee0b0;
+  --warning: #ffd166;
+  --shadow-sm: 0 1px 2px rgba(0, 6, 24, 0.4);
+  --shadow-md: 0 0 0 1px rgba(239, 246, 255, 0.05), 0 8px 24px rgba(0, 8, 32, 0.45);
+  --shadow-lg: 0 0 0 1px rgba(239, 246, 255, 0.12), 0 24px 64px rgba(0, 6, 28, 0.6);
+  --overlay: rgba(1, 8, 30, 0.6);
+  --radius: 10px;
+  --cat-daily: #ff6535;
+  --cat-weekly: #8fb8ff;
+  --cat-monthly: #ffd166;
+  --cat-custom: #7ee0b0;
+  --cat-once: #c9d4ea;
+}
+
 /* ---------- Preferences ---------- */
 html {
   font-size: 15px;
@@ -2970,4 +3043,57 @@ html[data-theme='monochrome'] .day-picker button.active {
     height: 32px;
     margin-top: -8px;
   }
+}
+
+/* ---------- Animated theme backgrounds ---------- */
+.theme-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--bg);
+}
+.theme-bg canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+/* Shown if WebGL isn't available (and before the first frame). */
+.theme-bg-swarm {
+  background: radial-gradient(900px 600px at 70% 20%, rgba(255, 101, 53, 0.18), transparent 60%),
+    radial-gradient(900px 700px at 15% 85%, rgba(239, 246, 255, 0.1), transparent 60%), #061c5e;
+}
+.theme-bg ~ * {
+  position: relative;
+  z-index: 1;
+}
+/* Frosted panels so the motion reads as texture behind the tasks, not noise. */
+html[data-theme='terraces'] :is(.empty, .search),
+html[data-theme='swarm'] :is(.empty, .search) {
+  background: var(--surface);
+}
+html[data-theme='terraces'] :is(.task-list, .composer, .progress-card, .all-done, .dialog, .menu, .card, .stat, .empty, .search),
+html[data-theme='swarm'] :is(.task-list, .composer, .progress-card, .all-done, .dialog, .menu, .card, .stat, .empty, .search) {
+  backdrop-filter: blur(14px) saturate(130%);
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
+}
+html[data-theme='terraces'] .topbar,
+html[data-theme='swarm'] .topbar {
+  background: var(--sidebar);
+}
+html[data-theme='terraces'] :is(.page-title, .page-subtitle, .page-head .eyebrow),
+html[data-theme='swarm'] :is(.page-title, .page-subtitle, .page-head .eyebrow) {
+  color: var(--text);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 2px 16px rgba(0, 0, 0, 0.35);
+}
+.theme-card-tag {
+  margin: 0 auto 0 6px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-soft);
 }

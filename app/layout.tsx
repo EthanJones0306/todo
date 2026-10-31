@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Orbitron, Press_Start_2P, Playfair_Display, EB_Garamond, Inter, JetBrains_Mono } from 'next/font/google'
 import { SETTINGS_INIT_SCRIPT } from '@/lib/init-script'
+import ThemeBackground from '@/components/ThemeBackground'
 import './globals.css'
 
 const inter = Inter({
@@ -59,7 +60,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script dangerouslySetInnerHTML={{ __html: SETTINGS_INIT_SCRIPT }} />
       </head>
-      <body>{children}</body>
+      <body>
+        <ThemeBackground />
+        {children}
+      </body>
     </html>
   )
 }
