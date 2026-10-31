@@ -23,6 +23,8 @@ export interface Settings {
   sidebarCollapsed: boolean
   /** Sync with Microsoft To Do in the background instead of only when the Sync button is pressed */
   autoSync: boolean
+  /** Focus view: hide the add-task bar so the page is just the tasks */
+  focusMode: boolean
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -38,6 +40,7 @@ export const DEFAULT_SETTINGS: Settings = {
   weekStartsOn: 1,
   sidebarCollapsed: false,
   autoSync: true,
+  focusMode: false,
 }
 
 const CHANGE_EVENT = 'arcade-settings-change'

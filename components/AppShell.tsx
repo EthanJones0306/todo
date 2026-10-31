@@ -151,11 +151,14 @@ export default function AppShell({
       } else if (e.key === '[') {
         e.preventDefault()
         updateSettings({ sidebarCollapsed: !settings.sidebarCollapsed })
+      } else if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault()
+        updateSettings({ focusMode: !settings.focusMode })
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [settingsTab, settings.sidebarCollapsed, updateSettings, mode])
+  }, [settingsTab, settings.sidebarCollapsed, settings.focusMode, updateSettings, mode])
 
   return (
     <div className={`app ${settings.sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
@@ -222,6 +225,15 @@ export default function AppShell({
               )}
             </button>
           )}
+          <button
+            className={`icon-btn ${settings.focusMode ? 'is-on' : ''}`}
+            onClick={() => updateSettings({ focusMode: !settings.focusMode })}
+            aria-pressed={settings.focusMode}
+            aria-label="Focus view"
+            title={settings.focusMode ? 'Show the add-task bar (F)' : 'Focus view: just your tasks (F)'}
+          >
+            <Icon name="focus" />
+          </button>
           <button className="icon-btn" onClick={() => setSettingsTab('appearance')} aria-label="Settings" title="Settings ( , )">
             <Icon name="settings" />
           </button>

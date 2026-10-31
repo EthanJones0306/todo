@@ -523,6 +523,11 @@ textarea:focus-visible {
   width: 28px;
   height: 28px;
 }
+/* A toggle that is switched on, e.g. Focus view. */
+.icon-btn.is-on {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
 
 .text-btn {
   font-size: 0.8125rem;

@@ -7,7 +7,7 @@ import { Category, CATEGORY_LABEL, CATEGORY_ORDER, DAY_LABELS, Mode, RecurrenceD
 import { createProjectFromTodo, loadProjects } from '@/lib/storage'
 import { DATA_CHANGE_EVENT, duplicateOf, isClearable, loadDeleted, loadMode, loadTodos, markDeleted, resetRepeatingTasks, toggleDone, saveMode, saveTodos, getNextDueDate } from '@/lib/todos'
 import { addDays, formatLongToday, formatRelativeDate, getTodayString, greeting, isDueToday, isOverdue } from '@/lib/date'
-import { Settings, useSettings } from '@/lib/settings'
+import { Settings, loadSettings, useSettings } from '@/lib/settings'
 import { canReprioritise, Priority, priorityCompare, priorityLabel, reprioritise, withParsedTitle } from '@/lib/priority'
 import AppShell, { isTypingTarget } from '@/components/AppShell'
 import { ALL_VIEWS, View, VIEW_LABEL } from '@/components/Sidebar'
@@ -34,7 +34,7 @@ function sortTodos(list: Todo[], sort: Settings['sort']): Todo[] {
 
 export default function Home() {
   const router = useRouter()
-  const [settings] = useSettings()
+  const [settings, updateSettings] = useSettings()
   const [todos, setTodos] = useState<Todo[]>([])
   const [mode, setMode] = useState<Mode>('personal')
   const [mounted, setMounted] = useState(false)
@@ -332,7 +332,11 @@ export default function Home() {
       if (e.metaKey || e.ctrlKey || e.altKey || isTypingTarget(e.target) || document.querySelector('.overlay')) return
       if (e.key === 'n' || e.key === 'N') {
         e.preventDefault()
-        composerRef.current?.focus()
+        // In focus view the add bar is hidden: bring it back, then focus it once it has rendered.
+        if (loadSettings().focusMode) {
+          updateSettings({ focusMode: false })
+          requestAnimationFrame(() => composerRef.current?.focus())
+        } else composerRef.current?.focus()
       } else if (e.key === '/') {
         e.preventDefault()
         searchRef.current?.focus()
@@ -342,7 +346,7 @@ export default function Home() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [selectView])
+  }, [selectView, updateSettings])
 
   /* ---------- Derived ---------- */
 
@@ -564,6 +568,7 @@ export default function Home() {
           )}
         </header>
 
+        {!settings.focusMode && (
         <div className="composer">
           <div className="composer-main">
             <span className="composer-icon">
@@ -702,6 +707,7 @@ export default function Home() {
             </button>
           </div>
         </div>
+        )}
 
         <div className="list-toolbar">
           <div className="search">
@@ -737,7 +743,7 @@ export default function Home() {
             </div>
           </div>
         ) : activeTodos.length === 0 && completedTodos.length === 0 ? (
-          <EmptyState view={view} searching={!!query} />
+          <EmptyState view={view} searching={!!query} focus={settings.focusMode} />
         ) : (
           <>
             {activeTodos.length === 0 ? (
@@ -1000,14 +1006,14 @@ function TaskRow(p: TaskRowProps) {
   )
 }
 
-function EmptyState({ view, searching }: { view: View; searching: boolean }) {
+function EmptyState({ view, searching, focus }: { view: View; searching: boolean; focus: boolean }) {
   const copy = searching
     ? { icon: 'search' as const, title: 'No matches', body: 'Try a different search term.' }
     : view === 'today'
-    ? { icon: 'sun' as const, title: 'A clear day', body: 'Add a task above to plan what matters today.' }
+    ? { icon: 'sun' as const, title: 'A clear day', body: focus ? 'Nothing on today. Press N to add a task.' : 'Add a task above to plan what matters today.' }
     : view === 'upcoming'
     ? { icon: 'calendar' as const, title: 'Nothing scheduled', body: 'Tasks with a future due date show up here.' }
-    : { icon: 'inbox' as const, title: 'No tasks yet', body: 'Add your first task above — press N anytime.' }
+    : { icon: 'inbox' as const, title: 'No tasks yet', body: focus ? 'Press N to add your first task.' : 'Add your first task above — press N anytime.' }
   return (
     <div className="empty">
       <div className="empty-icon">
