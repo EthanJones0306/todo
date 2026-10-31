@@ -1,7 +1,7 @@
 export type Category = 'once' | 'daily' | 'weekly' | 'monthly' | 'custom'
 export type RecurrenceDays = number[]
 export type Mode = 'personal' | 'work'
-export type Theme = 'paper' | 'midnight' | 'pch' | 'swarm' | 'aurora' | 'swell' | 'contour' | 'nightsky' | 'beehive'
+export type Theme = 'paper' | 'pch' | 'swarm' | 'aurora' | 'swell' | 'contour' | 'nightsky' | 'beehive'
 export type Filter = 'all' | Category
 export type PhaseStatus = 'pending' | 'active' | 'done'
 

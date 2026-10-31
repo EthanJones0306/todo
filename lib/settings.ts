@@ -70,7 +70,7 @@ export function loadSettings(): Settings {
 export function resolveTheme(choice: ThemeChoice): Theme {
   if (choice !== 'system') return choice
   if (typeof window === 'undefined') return 'pch'
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'midnight' : 'pch'
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'swarm' : 'pch'
 }
 
 export function applySettingsToDocument(s: Settings): void {

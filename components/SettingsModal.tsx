@@ -149,7 +149,7 @@ export default function SettingsModal({ initialTab = 'appearance', settings, onC
                     preview={
                       <div className="theme-split">
                         <ThemePreview swatch={THEMES[0].swatch} />
-                        <ThemePreview swatch={THEMES.find(t => t.id === 'midnight')!.swatch} />
+                        <ThemePreview swatch={THEMES.find(t => t.id === 'swarm')!.swatch} />
                       </div>
                     }
                   />
