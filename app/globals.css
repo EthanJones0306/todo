@@ -978,6 +978,7 @@ select.field {
 }
 
 .workspace-switch {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
   padding: 3px;
@@ -986,7 +987,25 @@ select.field {
   background: var(--surface-3);
   border: 1px solid var(--border);
 }
+/* The highlight slides between Personal and Work rather than jumping. */
+.workspace-switch::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 4px);
+  border-radius: calc(var(--radius-sm) - 2px);
+  background: var(--surface);
+  box-shadow: var(--shadow-md), inset 0 -2px 0 color-mix(in srgb, var(--accent) 70%, transparent);
+  transition: transform 280ms var(--ease);
+}
+.workspace-switch[data-active='1']::before {
+  transform: translateX(calc(100% + 2px));
+}
 .workspace-switch button {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -996,15 +1015,22 @@ select.field {
   font-size: 0.8125rem;
   font-weight: 550;
   color: var(--text-3);
-  transition: all var(--dur) var(--ease);
+  transition: color var(--dur) var(--ease);
+}
+.workspace-switch button .icon {
+  transition: transform 220ms var(--ease);
 }
 .workspace-switch button:hover {
   color: var(--text);
 }
+.workspace-switch button:hover .icon {
+  transform: translateY(-1px) scale(1.12);
+}
 .workspace-switch button.active {
-  background: var(--surface);
   color: var(--text);
-  box-shadow: var(--shadow-md);
+}
+.workspace-switch button.active .icon {
+  color: var(--accent);
 }
 
 .sidebar-nav {
@@ -1029,35 +1055,105 @@ select.field {
   color: var(--text-3);
   padding: 0 10px 6px;
 }
+
+/* Each sidebar item has its own colour (--c), taken from the theme so it fits every palette. */
+[data-nav='today'] {
+  --c: var(--warning);
+}
+[data-nav='upcoming'] {
+  --c: var(--cat-custom);
+}
+[data-nav='all'] {
+  --c: var(--accent);
+}
+[data-nav='daily'] {
+  --c: var(--cat-daily);
+}
+[data-nav='weekly'] {
+  --c: var(--cat-weekly);
+}
+[data-nav='monthly'] {
+  --c: var(--cat-monthly);
+}
+[data-nav='custom'] {
+  --c: var(--cat-custom);
+}
+[data-nav='once'] {
+  --c: var(--cat-once, var(--text-3));
+}
+[data-nav='project'] {
+  --c: var(--cat-weekly);
+}
+[data-nav='settings'] {
+  --c: var(--text-2);
+}
+
 .nav-item {
+  position: relative;
+  isolation: isolate;
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
-  height: 32px;
-  padding: 0 10px;
+  height: 34px;
+  padding: 0 8px 0 6px;
   border-radius: var(--radius-sm);
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--text-2);
   text-align: left;
-  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  overflow: hidden;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
-.nav-item .icon {
-  color: var(--text-3);
-  transition: color var(--dur) var(--ease);
+/* Spotlight that follows the mouse (position set from Sidebar.tsx). */
+.nav-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(
+    120px circle at var(--mx, 50%) var(--my, 50%),
+    color-mix(in srgb, var(--c, var(--accent)) 26%, transparent),
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 220ms var(--ease);
 }
-.nav-item:hover {
-  background: var(--surface-2);
-  color: var(--text);
+/* Coloured bar on the left: a short preview on hover, full height when selected. */
+.nav-item::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 7px;
+  bottom: 7px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--c, var(--accent));
+  transform: scaleY(0);
+  transition: transform 240ms var(--ease);
 }
-.nav-item.active {
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: var(--shadow-md);
+.nav-chip {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: calc(var(--radius-sm) + 1px);
+  color: var(--c, var(--text-3));
+  background: color-mix(in srgb, var(--c, var(--text-3)) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c, var(--text-3)) 18%, transparent);
+  transition: transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1), background var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
 }
-.nav-item.active .icon {
-  color: var(--accent);
+.nav-chip .icon {
+  color: inherit;
+}
+.nav-chip .cat-dot {
+  margin: 0;
+  width: 8px;
+  height: 8px;
+  background: var(--c);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 22%, transparent);
 }
 .nav-label {
   flex: 1;
@@ -1065,13 +1161,80 @@ select.field {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: transform 220ms var(--ease);
 }
 .nav-count {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
+  text-align: center;
   color: var(--text-3);
-  font-weight: 550;
+  font-weight: 600;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
 }
+
+.nav-item:hover,
+.nav-item:focus-visible {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.nav-item:hover::before,
+.nav-item:focus-visible::before {
+  opacity: 1;
+}
+.nav-item:hover::after,
+.nav-item:focus-visible::after {
+  transform: scaleY(0.45);
+}
+.nav-item:hover .nav-chip,
+.nav-item:focus-visible .nav-chip {
+  transform: scale(1.1) rotate(-6deg);
+  background: color-mix(in srgb, var(--c, var(--text-3)) 24%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c, var(--text-3)) 30%, transparent),
+    0 4px 12px -4px color-mix(in srgb, var(--c, var(--text-3)) 60%, transparent);
+}
+.nav-item:hover .nav-label,
+.nav-item:focus-visible .nav-label {
+  transform: translateX(2px);
+}
+.nav-item:hover .nav-count,
+.nav-item:focus-visible .nav-count {
+  background: color-mix(in srgb, var(--c, var(--text-3)) 16%, transparent);
+  color: var(--text);
+}
+.nav-item:active .nav-chip {
+  transform: scale(0.94);
+}
+
+.nav-item.active {
+  background: color-mix(in srgb, var(--c, var(--accent)) 12%, var(--surface));
+  color: var(--text);
+  box-shadow: var(--shadow-md), inset 0 0 0 1px color-mix(in srgb, var(--c, var(--accent)) 22%, transparent);
+}
+.nav-item.active::after {
+  transform: scaleY(1);
+}
+.nav-item.active .nav-chip {
+  color: var(--c, var(--accent));
+  background: color-mix(in srgb, var(--c, var(--accent)) 26%, transparent);
+}
+.nav-item.active .nav-count {
+  background: color-mix(in srgb, var(--c, var(--accent)) 22%, transparent);
+  color: var(--text);
+}
+
+/* The logo tile tilts and glows when you point at the brand. */
+.sidebar-brand .brand-mark {
+  transition: transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow var(--dur) var(--ease);
+}
+.sidebar-brand:hover .brand-mark {
+  transform: rotate(-8deg) scale(1.08);
+  box-shadow: var(--shadow-sm), 0 6px 18px -4px color-mix(in srgb, var(--accent) 70%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
 .nav-empty {
   font-size: 0.8rem;
   color: var(--text-3);

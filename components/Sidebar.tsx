@@ -59,9 +59,19 @@ export default function Sidebar({
   mobileOpen,
   onCloseMobile,
 }: SidebarProps) {
+  // A soft spotlight follows the mouse across whichever item it is over (see .nav-item::before).
+  const trackSpotlight = (e: React.PointerEvent) => {
+    const item = (e.target as HTMLElement).closest<HTMLElement>('.nav-item')
+    if (!item) return
+    const r = item.getBoundingClientRect()
+    item.style.setProperty('--mx', `${e.clientX - r.left}px`)
+    item.style.setProperty('--my', `${e.clientY - r.top}px`)
+  }
+
   const renderItem = (id: View, label: string, leading: React.ReactNode, index: number) => (
     <button
       key={id}
+      data-nav={id}
       className={`nav-item ${activeView === id ? 'active' : ''}`}
       onClick={() => {
         onSelectView(id)
@@ -70,7 +80,7 @@ export default function Sidebar({
       aria-current={activeView === id ? 'page' : undefined}
       title={`${label} (${index + 1})`}
     >
-      {leading}
+      <span className="nav-chip">{leading}</span>
       <span className="nav-label">{label}</span>
       {!!counts[id] && <span className="nav-count">{counts[id]}</span>}
     </button>
@@ -79,7 +89,7 @@ export default function Sidebar({
   return (
     <>
       <div className={`sidebar-scrim ${mobileOpen ? 'show' : ''}`} onClick={onCloseMobile} />
-      <aside className={`sidebar ${mobileOpen ? 'open' : ''}`} aria-label="Navigation">
+      <aside className={`sidebar ${mobileOpen ? 'open' : ''}`} aria-label="Navigation" onPointerMove={trackSpotlight}>
         <div className="sidebar-brand">
           <div className="brand-mark">
             <Icon name="check" size={14} />
@@ -87,7 +97,7 @@ export default function Sidebar({
           <span className="brand-name">Todo</span>
         </div>
 
-        <div className="workspace-switch" role="radiogroup" aria-label="Workspace">
+        <div className="workspace-switch" role="radiogroup" aria-label="Workspace" data-active={MODE_ORDER.indexOf(mode)}>
           {MODE_ORDER.map(m => (
             <button
               key={m}
@@ -123,10 +133,13 @@ export default function Sidebar({
                 <Link
                   key={p.id}
                   href={`/project/${p.id}`}
+                  data-nav="project"
                   className={`nav-item ${activeProjectId === p.id ? 'active' : ''}`}
                   onClick={onCloseMobile}
                 >
-                  <Icon name="folder" />
+                  <span className="nav-chip">
+                    <Icon name="folder" />
+                  </span>
                   <span className="nav-label">{p.title}</span>
                   <span className="nav-count">
                     {p.done}/{p.total}
@@ -138,8 +151,10 @@ export default function Sidebar({
         </nav>
 
         <div className="sidebar-footer">
-          <button className="nav-item" onClick={onOpenSettings}>
-            <Icon name="settings" />
+          <button className="nav-item" data-nav="settings" onClick={onOpenSettings}>
+            <span className="nav-chip">
+              <Icon name="settings" />
+            </span>
             <span className="nav-label">Settings</span>
             <Kbd>,</Kbd>
           </button>
