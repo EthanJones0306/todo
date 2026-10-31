@@ -1,7 +1,9 @@
 /**
- * Animated backgrounds for the "Terraces" and "Swarm" themes.
+ * Animated backgrounds for the motion themes.
  *
- * Adapted from Subframe's "Etched terraces" and "Paper swarm" motion examples.
+ * Adapted from Subframe Motion Library examples: "Etched terraces", "Paper swarm", "Aurora curtain",
+ * "Point cloud wave", "Contour terrain" and "Meteors". Colours and speeds are toned down so the
+ * motion sits quietly behind a task list.
  *
  * MIT License
  * Copyright (c) 2026 Subframe
@@ -25,8 +27,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 
-type Scene = 'terraces' | 'swarm'
-const SCENES: Scene[] = ['terraces', 'swarm']
+type Scene = 'terraces' | 'swarm' | 'aurora' | 'swell' | 'contour' | 'nightsky'
+const SCENES: Scene[] = ['terraces', 'swarm', 'aurora', 'swell', 'contour', 'nightsky']
+const CANVAS_SCENES: Scene[] = ['terraces', 'swarm', 'aurora', 'swell', 'contour']
 
 /** A running scene. `play` starts or stops the motion; when stopped it shows a still frame. */
 interface SceneHandle {
@@ -229,8 +232,10 @@ in float edition;
 in float depth;
 out vec4 color;
 void main(){
-  vec3 paper=mix(vec3(.98,.30,.07),vec3(.94,.96,.98),step(.52,edition));
-  vec3 ink=vec3(.035,.08,.20);
+  // PCH palette: white and PCH blue sheets, the odd gold one, printed in PCH navy.
+  vec3 paper=mix(vec3(.21,.60,.72),vec3(.95,.97,.99),step(.45,edition));
+  paper=mix(paper,vec3(.85,.68,0.),step(.92,edition));
+  vec3 ink=vec3(0.,.184,.424);
   float margin=step(.12,uv.x)*step(uv.x,.88);
   float lines=step(.68,fract(uv.y*24.))*step(.12,uv.y)*step(uv.y,.42)*margin;
   float title=step(.61,uv.y)*step(uv.y,.83)*margin;
@@ -239,7 +244,8 @@ void main(){
   float fold=smoothstep(.38,.5,uv.x)*.10-smoothstep(.5,.62,uv.x)*.10;
   vec3 paint=mix(paper,ink,max(lines,title));
   paint*=1.-fold;
-  color=vec4(mix(paint,vec3(.025,.11,.37),depth*.50),1.);
+  // Fade sheets into the navy field so they read as texture, not clutter.
+  color=vec4(mix(paint,vec3(0.,.141,.353),.30+depth*.50),1.);
 }`
 
 function startSwarm(canvas: HTMLCanvasElement): SceneHandle | null {
@@ -255,7 +261,7 @@ function startSwarm(canvas: HTMLCanvasElement): SceneHandle | null {
     if (program) gl.deleteProgram(program)
     if (vao) gl.deleteVertexArray(vao)
   }
-  const COUNT = 150
+  const COUNT = 110
   try {
     const compile = (kind: number, source: string) => {
       const shader = gl.createShader(kind)
@@ -306,7 +312,7 @@ function startSwarm(canvas: HTMLCanvasElement): SceneHandle | null {
   const aspectU = gl.getUniformLocation(program, 'aspect')
   const cameraU = gl.getUniformLocation(program, 'camera')
   gl.enable(gl.DEPTH_TEST)
-  gl.clearColor(0.025, 0.11, 0.37, 1)
+  gl.clearColor(0, 0.141, 0.353, 1)
 
   let time = 9
   let raf = 0
@@ -326,7 +332,7 @@ function startSwarm(canvas: HTMLCanvasElement): SceneHandle | null {
     const dt = last ? Math.min((now - last) / 1000, 0.04) : 0
     last = moving ? now : 0
     if (moving) {
-      time += dt * 0.6
+      time += dt * 0.5
       const ease = 1 - Math.exp(-3 * dt)
       camX += (targetX - camX) * ease
       camY += (targetY - camY) * ease
@@ -382,6 +388,253 @@ function startSwarm(canvas: HTMLCanvasElement): SceneHandle | null {
   }
 }
 
+/* ---------- Full-screen shader scenes (WebGL1): Aurora, Swell, Contour ---------- */
+
+/** Aurora curtain: soft green curtains over a night sky, dimmed so white text stays readable. */
+const AURORA_FRAGMENT = `
+precision highp float;
+uniform vec2 u_resolution;
+uniform float u_time;
+float hash(vec2 p){return fract(sin(dot(p,vec2(127.13,311.71)))*43719.17);}
+float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1)),f.x),f.y);}
+void main(){
+ vec2 uv=gl_FragCoord.xy/u_resolution;
+ vec2 p=(gl_FragCoord.xy-.5*u_resolution)/u_resolution.y;
+ float activity=.35,t=u_time*(.09+activity*.07);
+ vec3 color=mix(vec3(.003,.012,.025),vec3(.01,.035,.055),uv.y);
+ for(int i=0;i<3;i++){
+  float layer=float(i),x=p.x+layer*.42;
+  float bend=.15*sin(x*2.2+t*.25)+(.03+activity*.08)*sin(x*4.8-t*.6+layer);
+  float hem=-.10-layer*.13+bend+(.012+activity*.028)*(noise(vec2(x*15.,t*.35+layer))-.5);
+  float rise=p.y-hem;
+  float drift=x+rise*.1+(.017+activity*.015)*noise(vec2(x*8.,t*.2+layer));
+  float grain=noise(vec2(drift*145.,t*.4+layer*4.));
+  float fine=noise(vec2(drift*310.,t*.17+layer));
+  float threads=.36+.64*pow(grain,.7)+fine*.17;
+  float patches=.48+.8*noise(vec2(x*8.+layer,t*.13));
+  float reach=5.5+noise(vec2(x*11.,layer+4.))*5.-activity*1.5;
+  float veil=smoothstep(-.012,.022,rise)*exp(-max(rise,0.)*reach);
+  float lip=exp(-abs(rise)/(.007+grain*.013));
+  float halo=exp(-abs(rise)*16.)*.12;
+  float amount=pow(.32,layer)*patches;
+  vec3 tint=mix(vec3(.10,.84,.40),vec3(.025,.28,.32),smoothstep(.02,.38,max(0.,rise)));
+  color+=amount*(tint*(veil*threads*(.5+activity*.52)+halo)+vec3(.46,1.0,.70)*lip*threads*(.55+activity*.4));
+ }
+ vec2 star=p*150.,cell=floor(star);
+ float points=step(.9974,hash(cell))*(1.-smoothstep(.02,.14,length(fract(star)-.5)));
+ color+=points*.42*(1.-smoothstep(.1,.8,color.g));
+ color*=.88+.12*pow(max(0.,1.-length(p)*.6),.6);
+ gl_FragColor=vec4((1.-exp(-color*1.4))*.7,1.);
+}
+`
+
+/** Point cloud wave: rows of small ultramarine dots swelling slowly on pale grey. */
+const SWELL_FRAGMENT = `
+precision highp float;
+uniform vec2 u_resolution;
+uniform float u_time;
+void main() {
+  vec2 p=(gl_FragCoord.xy-.5*u_resolution)/min(u_resolution.x,u_resolution.y);
+  vec3 c=vec3(.90,.92,.94);
+  for(int i=0;i<30;i++) {
+    float row=float(i);
+    float z=.45+row*.052;
+    float scale=1.0/(1.0+z);
+    float xCell=floor(p.x/scale*28.0+.5);
+    float x=xCell/28.0;
+    float height=sin(x*5.0+z*4.0-u_time*.48)*.1+.04*cos(x*9.0-z*3.0);
+    vec2 spot=vec2(x*scale,(.3-z*.31+height)*scale);
+    float radius=.004*scale+.0005;
+    float d=length(p-spot);
+    float dotMask=1.0-smoothstep(radius,radius+.001,d);
+    float shade=.45+.45*scale;
+    c=mix(c,vec3(.045,.12,.65)*shade,dotMask*.8);
+  }
+  gl_FragColor=vec4(c,1);
+}
+`
+
+/** Contour terrain: drifting elevation bands, softened to a pale sand map with peach contours. */
+const CONTOUR_FRAGMENT = `
+precision highp float;
+uniform vec2 u_resolution;
+uniform float u_time;
+float terrain(vec2 p) {
+  p += .045 * vec2(sin(u_time * .17), cos(u_time * .13));
+  float a = exp(-dot(p - vec2(.22,.12), p - vec2(.22,.12)) * 4.0);
+  float b = .72 * exp(-dot(p - vec2(-.4,-.2), p - vec2(-.4,-.2)) * 7.5);
+  float valley = .37 * exp(-dot(p - vec2(-.02,-.25), p - vec2(-.02,-.25)) * 18.0);
+  return a + b - valley + .027 * sin(p.x * 18.0 + sin(p.y * 12.0));
+}
+void main() {
+  vec2 p = (gl_FragCoord.xy - .5 * u_resolution) / min(u_resolution.x, u_resolution.y);
+  float altitude = terrain(p * 1.6);
+  float band = floor(altitude * 15.0) / 15.0;
+  float edge = fract(altitude * 15.0);
+  float contour = 1.0 - smoothstep(.024, .115, min(edge, 1.0 - edge));
+  float shade = smoothstep(.06, .19, edge) * (1.0 - smoothstep(.84,.98,edge));
+  vec3 orange = vec3(.76,.205,.062);
+  vec3 sand = vec3(.98,.87,.63);
+  vec3 color = mix(orange, sand, clamp(band * .78, 0.0, .9));
+  color *= .9 + .1 * shade;
+  color = mix(color, vec3(.99,.92,.75), contour * .78);
+  vec2 marks = abs(fract(p * 5.0 + .5) - .5);
+  float cross = (1.0 - smoothstep(.005,.011,marks.x)) * (1.0 - smoothstep(.035,.04,marks.y));
+  cross = max(cross, (1.0 - smoothstep(.005,.011,marks.y)) * (1.0 - smoothstep(.035,.04,marks.x)));
+  color = mix(color, vec3(.44,.11,.045), cross * .35);
+  // Wash towards warm paper so dark text reads on top of it.
+  color = mix(color, vec3(.985,.945,.88), .64);
+  gl_FragColor = vec4(color, 1.0);
+}
+`
+
+const SHADERS: Record<'aurora' | 'swell' | 'contour', { source: string; speed: number; start: number; maxPixels: number }> = {
+  aurora: { source: AURORA_FRAGMENT, speed: 1, start: 3, maxPixels: 1_600_000 },
+  swell: { source: SWELL_FRAGMENT, speed: 0.6, start: 3, maxPixels: 3_000_000 },
+  contour: { source: CONTOUR_FRAGMENT, speed: 1, start: 3, maxPixels: 1_600_000 },
+}
+
+function startShader(canvas: HTMLCanvasElement, scene: keyof typeof SHADERS): SceneHandle | null {
+  const { source, speed, start, maxPixels } = SHADERS[scene]
+  const gl = canvas.getContext('webgl', { alpha: false, antialias: false, powerPreference: 'low-power' })
+  if (!gl) return null
+  const shaders: WebGLShader[] = []
+  const program = gl.createProgram()
+  const buffer = gl.createBuffer()
+  const free = () => {
+    shaders.forEach(sh => gl.deleteShader(sh))
+    gl.deleteProgram(program)
+    gl.deleteBuffer(buffer)
+  }
+  const compile = (type: number, code: string) => {
+    const shader = gl.createShader(type)
+    if (!shader) return null
+    shaders.push(shader)
+    gl.shaderSource(shader, code)
+    gl.compileShader(shader)
+    return gl.getShaderParameter(shader, gl.COMPILE_STATUS) ? shader : null
+  }
+  const vertex = compile(gl.VERTEX_SHADER, 'attribute vec2 a_position; void main(){gl_Position=vec4(a_position,0.0,1.0);}')
+  const fragment = compile(gl.FRAGMENT_SHADER, source)
+  if (!vertex || !fragment || !program || !buffer) {
+    free()
+    return null
+  }
+  gl.attachShader(program, vertex)
+  gl.attachShader(program, fragment)
+  gl.linkProgram(program)
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    free()
+    return null
+  }
+  gl.useProgram(program)
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW)
+  const position = gl.getAttribLocation(program, 'a_position')
+  gl.enableVertexAttribArray(position)
+  gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0)
+  const resolutionU = gl.getUniformLocation(program, 'u_resolution')
+  const timeU = gl.getUniformLocation(program, 'u_time')
+
+  let time = start
+  let raf = 0
+  let last = 0
+  let playing = false
+  let stopped = false
+
+  const draw = () => {
+    if (stopped || gl.isContextLost()) return
+    gl.viewport(0, 0, canvas.width, canvas.height)
+    gl.uniform2f(resolutionU, canvas.width, canvas.height)
+    gl.uniform1f(timeU, time)
+    gl.drawArrays(gl.TRIANGLES, 0, 6)
+  }
+  // ~30fps is plenty for slow ambient motion and keeps the GPU (and battery) relaxed.
+  const tick = (now: number) => {
+    raf = 0
+    if (stopped || !playing || document.hidden) {
+      last = 0
+      return
+    }
+    if (!last || now - last >= 32) {
+      if (last) time += Math.min((now - last) / 1000, 0.05) * speed
+      last = now
+      draw()
+    }
+    raf = requestAnimationFrame(tick)
+  }
+  const wake = () => {
+    if (playing && !raf && !stopped && !document.hidden) raf = requestAnimationFrame(tick)
+  }
+  const resize = () => {
+    fitCanvas(canvas, maxPixels)
+    draw()
+  }
+  const observer = new ResizeObserver(resize)
+  observer.observe(canvas)
+  document.addEventListener('visibilitychange', wake)
+  const lost = (e: Event) => {
+    e.preventDefault()
+    cancelAnimationFrame(raf)
+    raf = 0
+  }
+  canvas.addEventListener('webglcontextlost', lost)
+  resize()
+
+  return {
+    play(on) {
+      playing = on
+      if (on) wake()
+      else {
+        cancelAnimationFrame(raf)
+        raf = 0
+        last = 0
+        draw()
+      }
+    },
+    destroy() {
+      stopped = true
+      cancelAnimationFrame(raf)
+      observer.disconnect()
+      document.removeEventListener('visibilitychange', wake)
+      canvas.removeEventListener('webglcontextlost', lost)
+      free()
+    },
+  }
+}
+
+/* ---------- Night sky: a few thin streaks of light crossing a quiet sky (CSS only) ---------- */
+
+const METEORS = Array.from({ length: 12 }, (_, i) => ({
+  left: `${8 + ((i * 31) % 100)}%`,
+  top: `${-8 + ((i * 17) % 40)}%`,
+  duration: `${7 + (i % 5) * 1.5}s`,
+  delay: `${-i * 2.3}s`,
+}))
+const STARS = Array.from({ length: 40 }, (_, i) => ({
+  left: `${(i * 37 + 11) % 100}%`,
+  top: `${(i * 53 + 7) % 100}%`,
+  opacity: 0.25 + ((i * 7) % 5) * 0.08,
+}))
+
+function NightSky({ still }: { still: boolean }) {
+  return (
+    <div className="night-sky">
+      {STARS.map((s, i) => (
+        <i key={`s${i}`} className="night-star" style={{ left: s.left, top: s.top, opacity: s.opacity }} />
+      ))}
+      {!still &&
+        METEORS.map((m, i) => (
+          <span
+            key={`m${i}`}
+            className="night-meteor"
+            style={{ left: m.left, top: m.top, animationDuration: m.duration, animationDelay: m.delay }}
+          />
+        ))}
+    </div>
+  )
+}
+
 /* ---------- The fixed layer behind the app ---------- */
 
 export default function ThemeBackground() {
@@ -393,8 +646,15 @@ export default function ThemeBackground() {
   useEffect(() => {
     const canvas = canvasRef.current
     setFailed(false)
-    if (!scene || !canvas) return
-    const h = scene === 'terraces' ? startTerraces(canvas) : startSwarm(canvas)
+    if (!scene || !CANVAS_SCENES.includes(scene) || !canvas) return
+    const h =
+      scene === 'terraces'
+        ? startTerraces(canvas)
+        : scene === 'swarm'
+          ? startSwarm(canvas)
+          : scene === 'aurora' || scene === 'swell' || scene === 'contour'
+            ? startShader(canvas, scene)
+            : null
     if (!h) {
       setFailed(true)
       return
@@ -429,8 +689,12 @@ export default function ThemeBackground() {
   if (!scene) return null
   return (
     <div className={`theme-bg theme-bg-${scene}`} aria-hidden="true">
-      {/* A canvas keeps one context type for life, so give each scene its own. */}
-      <canvas key={scene} ref={canvasRef} style={{ visibility: failed ? 'hidden' : 'visible' }} />
+      {scene === 'nightsky' ? (
+        <NightSky still={still} />
+      ) : (
+        // A canvas keeps one context type for life, so give each scene its own.
+        <canvas key={scene} ref={canvasRef} style={{ visibility: failed ? 'hidden' : 'visible' }} />
+      )}
     </div>
   )
 }

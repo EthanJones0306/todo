@@ -498,37 +498,178 @@ html[data-theme='terraces'] {
   --cat-once: #b8fdff;
 }
 
-/* Paper swarm: orange and silver sheets tumbling through royal blue. */
+/* PCH Swarm: white and PCH-blue sheets drifting through PCH navy. Arial, like the PCH theme. */
 html[data-theme='swarm'] {
   color-scheme: dark;
-  --bg: #061c5e;
-  --sidebar: rgba(3, 18, 58, 0.72);
-  --surface: rgba(4, 22, 70, 0.8);
-  --surface-2: rgba(10, 34, 96, 0.82);
-  --surface-3: rgba(18, 46, 120, 0.85);
-  --border: rgba(239, 246, 255, 0.14);
-  --border-strong: rgba(239, 246, 255, 0.3);
-  --text: #eff6ff;
-  --text-2: #bccbeb;
-  --text-3: #8396c4;
-  --accent: #ff6535;
-  --accent-hover: #ff7d52;
+  --bg: #00245a;
+  --sidebar: rgba(0, 26, 66, 0.84);
+  --surface: rgba(0, 32, 80, 0.88);
+  --surface-2: rgba(6, 46, 104, 0.9);
+  --surface-3: rgba(14, 60, 126, 0.92);
+  --border: rgba(242, 246, 251, 0.14);
+  --border-strong: rgba(242, 246, 251, 0.3);
+  --text: #f2f6fb;
+  --text-2: #c6d4e7;
+  --text-3: #93a9c8;
+  --accent: #5fb4d0;
+  --accent-hover: #7cc4dc;
+  --accent-fg: #002f6c;
+  --accent-soft: rgba(95, 180, 208, 0.18);
+  --danger: #f08c8c;
+  --danger-soft: rgba(240, 140, 140, 0.16);
+  --success: #a9bf3f;
+  --warning: #e6c13a;
+  --shadow-sm: 0 1px 2px rgba(0, 10, 30, 0.4);
+  --shadow-md: 0 0 0 1px rgba(242, 246, 251, 0.05), 0 8px 24px rgba(0, 12, 36, 0.45);
+  --shadow-lg: 0 0 0 1px rgba(242, 246, 251, 0.12), 0 24px 64px rgba(0, 10, 32, 0.6);
+  --overlay: rgba(0, 12, 34, 0.6);
+  --radius: 8px;
+  --radius-sm: 6px;
+  --radius-xs: 4px;
+  --font-body: Arial, Helvetica, sans-serif;
+  --font-display: Arial, Helvetica, sans-serif;
+  --display-weight: 700;
+  --display-tracking: -0.01em;
+  --cat-daily: #5fb4d0;
+  --cat-weekly: #a9bf3f;
+  --cat-monthly: #e6c13a;
+  --cat-custom: #3cc2b5;
+  --cat-once: #b0b3b2;
+}
+
+/* Aurora: soft green curtains over a night sky. */
+html[data-theme='aurora'] {
+  color-scheme: dark;
+  --bg: #03090f;
+  --sidebar: rgba(4, 14, 20, 0.8);
+  --surface: rgba(8, 22, 30, 0.84);
+  --surface-2: rgba(14, 32, 42, 0.86);
+  --surface-3: rgba(20, 44, 56, 0.88);
+  --border: rgba(170, 255, 210, 0.12);
+  --border-strong: rgba(170, 255, 210, 0.26);
+  --text: #eafff3;
+  --text-2: #b4d6c4;
+  --text-3: #7fa594;
+  --accent: #5be39a;
+  --accent-hover: #7fedb2;
+  --accent-fg: #03140b;
+  --accent-soft: rgba(91, 227, 154, 0.15);
+  --danger: #ff8f8f;
+  --danger-soft: rgba(255, 143, 143, 0.15);
+  --success: #5be39a;
+  --warning: #f2d272;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 0 0 1px rgba(170, 255, 210, 0.05), 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 0 0 1px rgba(170, 255, 210, 0.1), 0 24px 64px rgba(0, 0, 0, 0.6);
+  --overlay: rgba(1, 6, 10, 0.65);
+  --radius: 12px;
+  --cat-daily: #5be39a;
+  --cat-weekly: #7cc8f2;
+  --cat-monthly: #f2d272;
+  --cat-custom: #c3a6ff;
+  --cat-once: #a9c4b7;
+}
+
+/* Night sky: a few thin streaks of light on dark slate. */
+html[data-theme='nightsky'] {
+  color-scheme: dark;
+  --bg: #1c2836;
+  --sidebar: rgba(22, 32, 44, 0.86);
+  --surface: rgba(30, 43, 59, 0.88);
+  --surface-2: rgba(38, 54, 74, 0.9);
+  --surface-3: rgba(48, 66, 88, 0.92);
+  --border: rgba(183, 208, 221, 0.13);
+  --border-strong: rgba(183, 208, 221, 0.28);
+  --text: #e3edf3;
+  --text-2: #aec0cc;
+  --text-3: #7f95a6;
+  --accent: #9ec5da;
+  --accent-hover: #b7d6e6;
+  --accent-fg: #0f1a24;
+  --accent-soft: rgba(158, 197, 218, 0.16);
+  --danger: #f2a0a0;
+  --danger-soft: rgba(242, 160, 160, 0.15);
+  --success: #9fd8b5;
+  --warning: #ecd08c;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.25), 0 8px 24px rgba(4, 10, 18, 0.4);
+  --shadow-lg: 0 0 0 1px rgba(183, 208, 221, 0.08), 0 24px 64px rgba(4, 10, 18, 0.55);
+  --overlay: rgba(8, 14, 22, 0.6);
+  --radius: 12px;
+  --cat-daily: #9ec5da;
+  --cat-weekly: #c6b3e6;
+  --cat-monthly: #ecd08c;
+  --cat-custom: #9fd8b5;
+  --cat-once: #aec0cc;
+}
+
+/* Swell: rows of ultramarine dots rising and falling on pale grey. */
+html[data-theme='swell'] {
+  color-scheme: light;
+  --bg: #e5e8eb;
+  --sidebar: rgba(244, 246, 248, 0.84);
+  --surface: rgba(255, 255, 255, 0.88);
+  --surface-2: rgba(243, 245, 248, 0.92);
+  --surface-3: rgba(230, 234, 240, 0.94);
+  --border: rgba(15, 22, 51, 0.1);
+  --border-strong: rgba(15, 22, 51, 0.2);
+  --text: #0f1633;
+  --text-2: #444d68;
+  --text-3: #6b7390;
+  --accent: #2340c8;
+  --accent-hover: #1c34a8;
   --accent-fg: #ffffff;
-  --accent-soft: rgba(255, 101, 53, 0.18);
-  --danger: #ff8a8a;
-  --danger-soft: rgba(255, 138, 138, 0.16);
-  --success: #7ee0b0;
-  --warning: #ffd166;
-  --shadow-sm: 0 1px 2px rgba(0, 6, 24, 0.4);
-  --shadow-md: 0 0 0 1px rgba(239, 246, 255, 0.05), 0 8px 24px rgba(0, 8, 32, 0.45);
-  --shadow-lg: 0 0 0 1px rgba(239, 246, 255, 0.12), 0 24px 64px rgba(0, 6, 28, 0.6);
-  --overlay: rgba(1, 8, 30, 0.6);
+  --accent-soft: rgba(35, 64, 200, 0.1);
+  --danger: #c43c3c;
+  --danger-soft: rgba(196, 60, 60, 0.1);
+  --success: #2f7d4f;
+  --warning: #a8740c;
+  --shadow-sm: 0 1px 2px rgba(15, 22, 51, 0.06);
+  --shadow-md: 0 1px 2px rgba(15, 22, 51, 0.05), 0 6px 18px rgba(15, 22, 51, 0.08);
+  --shadow-lg: 0 10px 30px rgba(15, 22, 51, 0.14), 0 24px 64px rgba(15, 22, 51, 0.14);
+  --overlay: rgba(15, 22, 51, 0.3);
   --radius: 10px;
-  --cat-daily: #ff6535;
-  --cat-weekly: #8fb8ff;
-  --cat-monthly: #ffd166;
-  --cat-custom: #7ee0b0;
-  --cat-once: #c9d4ea;
+  --cat-daily: #2340c8;
+  --cat-weekly: #7a4fc4;
+  --cat-monthly: #b7791f;
+  --cat-custom: #1f8a7a;
+  --cat-once: #6b7390;
+}
+
+/* Contour: a pale, slowly shifting topographic map in warm sand. */
+html[data-theme='contour'] {
+  color-scheme: light;
+  --bg: #f6e6cc;
+  --sidebar: rgba(255, 248, 236, 0.84);
+  --surface: rgba(255, 251, 244, 0.9);
+  --surface-2: rgba(250, 241, 226, 0.94);
+  --surface-3: rgba(243, 230, 210, 0.95);
+  --border: rgba(80, 40, 14, 0.12);
+  --border-strong: rgba(80, 40, 14, 0.22);
+  --text: #3a1d0e;
+  --text-2: #6b4630;
+  --text-3: #8f6a52;
+  --accent: #b2441a;
+  --accent-hover: #963813;
+  --accent-fg: #ffffff;
+  --accent-soft: rgba(178, 68, 26, 0.1);
+  --danger: #b0302c;
+  --danger-soft: rgba(176, 48, 44, 0.1);
+  --success: #4f7a2c;
+  --warning: #a8700c;
+  --shadow-sm: 0 1px 2px rgba(80, 40, 14, 0.07);
+  --shadow-md: 0 1px 2px rgba(80, 40, 14, 0.06), 0 6px 18px rgba(80, 40, 14, 0.09);
+  --shadow-lg: 0 10px 30px rgba(80, 40, 14, 0.16), 0 24px 64px rgba(80, 40, 14, 0.14);
+  --overlay: rgba(58, 29, 14, 0.3);
+  --radius: 8px;
+  --font-display: var(--font-paper-heading), 'Playfair Display', Georgia, serif;
+  --display-weight: 700;
+  --display-tracking: -0.01em;
+  --cat-daily: #b2441a;
+  --cat-weekly: #3f6f8f;
+  --cat-monthly: #a8700c;
+  --cat-custom: #4f7a2c;
+  --cat-once: #8f6a52;
 }
 
 /* ---------- Preferences ---------- */
@@ -3060,31 +3201,98 @@ html[data-theme='monochrome'] .day-picker button.active {
 }
 /* Shown if WebGL isn't available (and before the first frame). */
 .theme-bg-swarm {
-  background: radial-gradient(900px 600px at 70% 20%, rgba(255, 101, 53, 0.18), transparent 60%),
-    radial-gradient(900px 700px at 15% 85%, rgba(239, 246, 255, 0.1), transparent 60%), #061c5e;
+  background: radial-gradient(900px 600px at 70% 20%, rgba(53, 153, 184, 0.22), transparent 60%),
+    radial-gradient(900px 700px at 15% 85%, rgba(242, 246, 251, 0.08), transparent 60%), #00245a;
+}
+.theme-bg-aurora {
+  background: radial-gradient(1200px 500px at 50% 75%, rgba(40, 160, 100, 0.18), transparent 65%), #03090f;
+}
+.theme-bg-swell {
+  background: radial-gradient(1000px 500px at 50% 60%, rgba(35, 64, 200, 0.08), transparent 65%), #e5e8eb;
+}
+.theme-bg-contour {
+  background: repeating-radial-gradient(ellipse at 62% 43%, #fbf1e0 0 22px, #f3dcc0 23px 24px), #f6e6cc;
 }
 .theme-bg ~ * {
   position: relative;
   z-index: 1;
 }
+
+/* Night sky: fixed faint stars, plus a few streaks that cross slowly. */
+.night-sky {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: radial-gradient(1200px 700px at 70% -10%, rgba(120, 160, 190, 0.14), transparent 60%), #1c2836;
+}
+.night-star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: #b7d0dd;
+}
+.night-meteor {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: #b7d0dd;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04);
+  opacity: 0;
+  transform: rotate(-145deg);
+  animation-name: night-meteor-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+.night-meteor::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 80px;
+  height: 1px;
+  transform: translateY(-50%);
+  background: linear-gradient(to right, rgba(154, 182, 198, 0.9), transparent);
+}
+@keyframes night-meteor-fall {
+  0% {
+    transform: rotate(-145deg) translateX(0);
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.85;
+  }
+  70% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: rotate(-145deg) translateX(-900px);
+    opacity: 0;
+  }
+}
+
 /* Frosted panels so the motion reads as texture behind the tasks, not noise. */
-html[data-theme='terraces'] :is(.empty, .search),
-html[data-theme='swarm'] :is(.empty, .search) {
+html:is([data-theme='terraces'], [data-theme='swarm'], [data-theme='aurora'], [data-theme='nightsky'], [data-theme='swell'], [data-theme='contour']) :is(.empty, .search) {
   background: var(--surface);
 }
-html[data-theme='terraces'] :is(.task-list, .composer, .progress-card, .all-done, .dialog, .menu, .card, .stat, .empty, .search),
-html[data-theme='swarm'] :is(.task-list, .composer, .progress-card, .all-done, .dialog, .menu, .card, .stat, .empty, .search) {
+html:is([data-theme='terraces'], [data-theme='swarm'], [data-theme='aurora'], [data-theme='nightsky'], [data-theme='swell'], [data-theme='contour']) :is(.task-list, .composer, .progress-card, .all-done, .dialog, .menu, .card, .stat, .empty, .search) {
   backdrop-filter: blur(14px) saturate(130%);
   -webkit-backdrop-filter: blur(14px) saturate(130%);
 }
-html[data-theme='terraces'] .topbar,
-html[data-theme='swarm'] .topbar {
+html:is([data-theme='terraces'], [data-theme='swarm'], [data-theme='aurora'], [data-theme='nightsky'], [data-theme='swell'], [data-theme='contour']) .topbar {
   background: var(--sidebar);
 }
-html[data-theme='terraces'] :is(.page-title, .page-subtitle, .page-head .eyebrow),
-html[data-theme='swarm'] :is(.page-title, .page-subtitle, .page-head .eyebrow) {
+/* Text that sits straight on the background gets a little help. */
+html:is([data-theme='terraces'], [data-theme='swarm'], [data-theme='aurora'], [data-theme='nightsky']) :is(.page-title, .page-subtitle, .page-head .eyebrow) {
   color: var(--text);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 2px 16px rgba(0, 0, 0, 0.35);
+}
+html:is([data-theme='swell'], [data-theme='contour']) :is(.page-title, .page-subtitle, .page-head .eyebrow) {
+  text-shadow: 0 0 2px var(--bg), 0 0 14px var(--bg), 0 0 28px var(--bg);
+}
+html:is([data-theme='swell'], [data-theme='contour']) .page-subtitle {
+  color: var(--text-2);
 }
 .theme-card-tag {
   margin: 0 auto 0 6px;
